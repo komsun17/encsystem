@@ -20,7 +20,7 @@ class Database {
      * @return PDO
      */
     private $host = "localhost";
-    private $dbname = "adminajax";
+    private $dbname = "encsystem";
     private $username = "root";
     private $password = "";
     private $conn = null;
@@ -45,5 +45,5 @@ class Database {
 /**
  * ประกาศ Instance ของ Class Database
  */
-// $Database = new Database();
-// $connect = $Database->connect();
+$Database = new Database();
+$connect = $Database->connect();

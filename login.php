@@ -27,7 +27,7 @@
     <div class="row justify-content-center">
       <section class="col-lg-6">
         <div class="card shadow p-3 p-md-4">
-          <h1 class="text-center text-primary font-weight-bold">QC Inspection</h1>
+          <h1 class="text-center text-primary font-weight-bold">ENC System</h1>
           <!-- <h4 class="text-center">เข้าสู่ระบบหลังบ้าน</h4>  -->
           <div class="card-body">
             <!-- HTML Form Login --> 
