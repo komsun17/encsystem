@@ -4,47 +4,53 @@ USE encsystem;
 
 -- ตารางผู้ใช้งาน
 CREATE TABLE users (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    username VARCHAR(50) NOT NULL UNIQUE,
-    password VARCHAR(255) NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    role ENUM('admin', 'engineer') DEFAULT 'engineer',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    name VARCHAR(100),
+    username VARCHAR(50) UNIQUE,
+    password VARCHAR(255),
+    role ENUM('engineer','admin')
 );
 
 -- ตารางโปรเจกต์
 CREATE TABLE projects (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    project_code VARCHAR(50) NOT NULL UNIQUE,
-    project_name VARCHAR(255) NOT NULL,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    project_code VARCHAR(50) UNIQUE,
+    project_name VARCHAR(100),
+    start_date DATE,
+    end_date DATE
 );
 
 -- ตาราง Drawing
 CREATE TABLE drawings (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    drawing_code VARCHAR(50) NOT NULL,
-    drawing_name VARCHAR(255) NOT NULL,
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    drawing_code VARCHAR(50),
+    drawing_name VARCHAR(100),
     project_id INT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE SET NULL
+    FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
--- ตารางบันทึกเวลา
+-- ตารางบันทึกเวลาหลัก
 CREATE TABLE time_logs (
-    id INT AUTO_INCREMENT PRIMARY KEY,
+    id INT PRIMARY KEY AUTO_INCREMENT,
     user_id INT NOT NULL,
     project_id INT NOT NULL,
-    drawing_id INT DEFAULT NULL,
+    drawing_id INT,
+    task_name VARCHAR(255),
     start_time DATETIME NOT NULL,
     end_time DATETIME,
-    duration_minutes INT GENERATED ALWAYS AS (
-        TIMESTAMPDIFF(MINUTE, start_time, end_time)
-    ) STORED,
+    duration_minutes INT,
+    status ENUM('running','paused','stopped') DEFAULT 'running',
     note TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    
-    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
-    FOREIGN KEY (project_id) REFERENCES projects(id) ON DELETE CASCADE,
-    FOREIGN KEY (drawing_id) REFERENCES drawings(id) ON DELETE SET NULL
+    FOREIGN KEY (user_id) REFERENCES users(id),
+    FOREIGN KEY (project_id) REFERENCES projects(id),
+    FOREIGN KEY (drawing_id) REFERENCES drawings(id)
+);
+
+-- ตารางเก็บช่วงเวลาย่อย
+CREATE TABLE time_log_segments (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    time_log_id INT NOT NULL,
+    segment_start DATETIME NOT NULL,
+    segment_end DATETIME,
+    FOREIGN KEY (time_log_id) REFERENCES time_logs(id)
 );

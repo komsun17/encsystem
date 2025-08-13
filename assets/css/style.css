@@ -1,11 +1,40 @@
-body,
-html {
+/* Reset และตั้งความสูงเต็มหน้าจอ */
+html, body {
   height: 100%;
+  margin: 0;
+  padding: 0;
   font-family: "Kanit", cursive !important;
   font-size: 0.95rem !important;
 }
+
+/* ตัว wrapper ครอบทั้งหมด ให้เป็น flex container แนวตั้ง */
+.wrapper {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;  /* ความสูงอย่างน้อยเต็มจอ */
+}
+
+/* content-wrapper ให้ขยายเต็มพื้นที่ที่เหลือ */
+.content-wrapper {
+  flex: 1 0 auto;
+  padding-top: 1rem; /* ตามที่คุณใช้ pt-3 (ประมาณ 1rem) */
+}
+
+/* footer ปรับให้ติดล่าง ไม่ลอย */
+.main-footer {
+  flex-shrink: 0;
+  position: relative !important; /* บังคับไม่ให้ fixed/absolute */
+  width: 100%;
+  background-color: #e6f2f1; /* ตามธีมของคุณ */
+  border-top: 1px solid #dee2e6;
+  padding: 0.75rem 1.25rem;
+  color: #004040;
+  box-shadow: 0 -2px 4px rgba(0,0,0,0.05);
+}
+
+/* CSS อื่นๆ ที่คุณให้มา ปรับเล็กน้อย */
+/* background สีคลุมพื้นที่แบบเดิม */
 .bg {
-  /* background: linear-gradient(135deg, #004080 0%, #00bfa5 100%); */
   width: 100%;
   height: 100%;
   position: absolute;
@@ -13,32 +42,7 @@ html {
   clip-path: polygon(0 0, 55% 0, 45% 100%, 0% 100%);
 }
 
-.w-60p {
-  width: 60px !important;
-}
-.w-90p {
-  width: 90px !important;
-}
-.w-150p {
-  width: 150px !important;
-}
-
-.canvas {
-  height: 300px !important;
-}
-.toggle.ios,
-.toggle-on.ios,
-.toggle-off.ios {
-  border-radius: 20px;
-  font-weight: 100px;
-}
-.toggle.ios .toggle-handle {
-  border-radius: 20px;
-}
-.toggle-on.btn {
-  padding-right: 19px;
-  font-weight: 100 !important;
-}
+/* ปรับปุ่มและกล่อง */
 .btn {
   font-size: inherit !important;
   background-color: #004080;
@@ -65,10 +69,7 @@ html {
   color: #004080;
 }
 
-.rtl {
-  direction: rtl !important;
-}
-
+/* Responsive ตามเดิม */
 @media (max-width: 1400px) {
   .table-responsive-xxl {
     display: block;
@@ -83,32 +84,52 @@ html {
     width: 300px !important;
   }
 }
-
 @media (max-width: 1200px) {
   .small-box h1 {
     font-size: 1.7rem !important;
   }
 }
-
 @media (max-width: 767px) {
   .small-box h1 {
     font-size: 1.4rem !important;
   }
 }
-.canvas {
-  z-index: 1000;
+ /* ปุ่มวงกลมขนาดใหญ่ 120x120 px */
+  .btn-circle {
+    width: 85px;
+    height: 85px;
+    padding: 0;
+    border-radius: 50%;
+    font-size: 85px; /* เพิ่มขนาดไอคอนใหญ่ขึ้น */
+    line-height: 85px;
+    text-align: center;
+    transition: background-color 0.3s ease;
+  }
+
+  /* เว้นระยะห่างระหว่างปุ่มให้กว้างขึ้น */
+  .btn-group-circle > .btn {
+    margin-right: 30px; /* เพิ่มช่องว่าง */
+  }
+
+  /* ปุ่ม disabled ลดความเข้ม */
+  .btn-circle:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .modal-header {
+  background-color: #004080 !important;  
+  color: #ffffff !important;
+  border-bottom: none !important;
 }
-.modal {
-  padding-top: 0px !important;
-  padding-bottom: 0px !important;
-  margin-top: 0px !important;
-  margin-bottom: 0px !important;
+
+.modal-header .close {
+  color: #ffffff !important;
+  opacity: 1 !important;
+  font-size: 1.5rem !important;
 }
-.checkbox-lg .form-check-input{
-  top: .8rem;
-  scale: 1.7;
-  margin-right: 0.7rem;
+
+.modal-header .close:hover {
+  color: #00bfa5 !important;
+  opacity: 1 !important;
 }
-.checkbox-lg .custom-check-label {
-    padding-top: 13px;
-}
+
