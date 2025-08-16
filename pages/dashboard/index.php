@@ -1,12 +1,11 @@
 <?php
-
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header('Location: ../../index.php');
+    header("Location: ../../login.php"); // ถ้า session ไม่มี → กลับหน้า login
     exit;
 }
 
-require_once('../authen.php');
+//require_once('../authen.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">

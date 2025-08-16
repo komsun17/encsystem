@@ -53,7 +53,7 @@ function isActive($data)
             <div class="info">
                 <a href="../manager/" class="d-block">
                     <?php
-                    $fname = $_SESSION['AD_FIRSTNAME'] ?? 'ไม่มีชื่อ';
+                    $fname = $_SESSION['name'] ?? 'ไม่มีชื่อ';
                     echo $fname;
                     ?>
                 </a>
@@ -76,13 +76,13 @@ function isActive($data)
                 <li class="nav-item">
                     <a href="../prodorderlines/" class="nav-link <?php echo isActive('members') ?>">
                         <i class="nav-icon fas fa fa-search"></i>
-                        <p>Prod. Order Semi</p>
+                        <p>Project Code</p>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a href="../nghistorys/" class="nav-link <?php echo isActive('nghistorys') ?>">
                         <i class="nav-icon fas fa fa-list-alt"></i>
-                        <p>NG History</p>
+                        <p>P-Code / T-Code</p>
                     </a>
                 </li>
                 <!-- <li class="nav-item">

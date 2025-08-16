@@ -16,7 +16,7 @@ if (!$username || !$password) {
 }
 
 try {
-    $stmt = $conn->prepare("SELECT id, name, username, password, role FROM users WHERE username = :username LIMIT 1");
+    $stmt = $conn->prepare("SELECT id, name, username, password, role, updated_at FROM users WHERE username = :username LIMIT 1");
     $stmt->bindParam(':username', $username);
     $stmt->execute();
     $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -42,6 +42,7 @@ try {
     $_SESSION['username'] = $user['username'];
     $_SESSION['name'] = $user['name'];
     $_SESSION['role'] = $user['role'];
+    $_SESSION['AD_LOGIN'] = $user['updated_at'];
 
     echo json_encode([
         'status' => 'success',
@@ -54,7 +55,6 @@ try {
         ]
     ]);
     exit;
-
 } catch (PDOException $e) {
     echo json_encode([
         'status' => 'error',

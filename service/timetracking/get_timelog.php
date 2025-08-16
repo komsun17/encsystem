@@ -22,7 +22,7 @@ $sql = "SELECT tl.id, u.username, p.project_name, d.drawing_name, tl.start_time,
         WHERE tl.user_id = ?
         ORDER BY tl.start_time DESC";
 
-$stmt = $pdo->prepare($sql);
+$stmt = $conn->prepare($sql);
 $stmt->execute([$user_id]);
 $timelogs = $stmt->fetchAll();
 

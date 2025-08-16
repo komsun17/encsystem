@@ -65,7 +65,7 @@
         e.preventDefault();
         $.ajax({
           type: "POST",
-          url: "service/auth/login.php",
+          url: "/encsystem/service/auth/login.php",
           data: $(this).serialize(),
           dataType: "json" // แจ้งว่า expect JSON
         }).done(function(resp) {

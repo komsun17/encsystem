@@ -1,5 +1,10 @@
 <?php
-require_once('../authen.php');
+session_start();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../../login.php"); // ถ้า session ไม่มี → กลับหน้า login
+    exit;
+}
+//require_once('../authen.php');
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -36,7 +41,7 @@ require_once('../authen.php');
                                 <div class="card-header border-0 pt-4">
                                     <h4><i class="fas fa-clock"></i> Time Tracking</h4>
                                     <a href="#" id="btnAddTimeLog" class="btn btn-primary mt-3">
-                                        <i class="fas fa-plus"></i> เพิ่มบันทึกเวลา
+                                        <i class="fas fa-plus"></i>&nbsp; Record time
                                     </a>
                                 </div>
                                 <div class="card-body">
@@ -124,8 +129,8 @@ require_once('../authen.php');
 
     <script>
         $(document).ready(function() {
-            // โหลด DataTable
-            $('#timeLogsTable').DataTable({
+            // สร้าง DataTable และเก็บ instance
+            let timeLogsTable = $('#timeLogsTable').DataTable({
                 ajax: {
                     url: "../../service/timetracking/get_timelog.php",
                     dataSrc: function(json) {
@@ -138,7 +143,6 @@ require_once('../authen.php');
                     },
                     error: function(xhr, error, thrown) {
                         console.error("Ajax error:", error, thrown);
-                        alert("เกิดข้อผิดพลาดในการโหลดข้อมูล");
                     }
                 },
                 columns: [{
@@ -171,6 +175,13 @@ require_once('../authen.php');
                     {
                         data: "note",
                         title: "Note"
+                    },
+                    {
+                        data: null,
+                        title: "Action",
+                        render: function(data) {
+                            return `<button class="btn btn-sm btn-info btn-edit" data-id="${data.id}"><i class="fas fa-edit"></i></button>`;
+                        }
                     }
                 ],
                 language: {
@@ -178,7 +189,7 @@ require_once('../authen.php');
                 }
             });
 
-            // ตัวแปรเก็บสถานะจับเวลา
+            // ตัวแปรจับเวลา
             let currentTimelogId = null;
             let timerInterval = null;
             let elapsedSeconds = 0;
@@ -210,7 +221,9 @@ require_once('../authen.php');
             }
 
             function resetModal() {
-                $('#statusText').text('ยังไม่เริ่ม').removeClass('text-success text-warning text-info text-danger').addClass('text-secondary');
+                $('#statusText').text('ยังไม่เริ่ม')
+                    .removeClass('text-success text-warning text-info text-danger')
+                    .addClass('text-secondary');
                 $('#btnStart').prop('disabled', false);
                 $('#btnPause, #btnResume, #btnStop').prop('disabled', true);
                 $('#selectProject, #selectDrawing').prop('disabled', false).val('');
@@ -220,24 +233,16 @@ require_once('../authen.php');
 
             function loadProjects() {
                 $('#selectProject').html('<option value="">กำลังโหลดข้อมูล...</option>');
-                $.ajax({
-                    url: '../../service/timetracking/get_projects.php',
-                    method: 'GET',
-                    dataType: 'json',
-                    success: function(res) {
-                        if (res.status === 'success') {
-                            let options = '<option value="">-- เลือกโปรเจกต์ --</option>';
-                            res.response.forEach(p => {
-                                options += `<option value="${p.id}">${p.project_name}</option>`;
-                            });
-                            $('#selectProject').html(options);
-                            $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
-                        } else {
-                            alert('ไม่สามารถโหลดข้อมูลโปรเจกต์ได้');
-                        }
-                    },
-                    error: function() {
-                        alert('เกิดข้อผิดพลาดขณะโหลดโปรเจกต์');
+                $.getJSON('../../service/timetracking/get_projects.php', function(res) {
+                    if (res.status === 'success') {
+                        let options = '<option value="">-- เลือกโปรเจกต์ --</option>';
+                        res.response.forEach(p => {
+                            options += `<option value="${p.id}">${p.project_name}</option>`;
+                        });
+                        $('#selectProject').html(options);
+                        $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
+                    } else {
+                        alert('ไม่สามารถโหลดข้อมูลโปรเจกต์ได้');
                     }
                 });
             }
@@ -249,33 +254,23 @@ require_once('../authen.php');
                     return;
                 }
                 $('#selectDrawing').html('<option value="">กำลังโหลดข้อมูล...</option>');
-                $.ajax({
-                    url: '../../service/timetracking/get_drawings.php',
-                    method: 'GET',
-                    data: {
-                        project_id: projectId
-                    },
-                    dataType: 'json',
-                    success: function(res) {
-                        if (res.status === 'success') {
-                            let options = '<option value="">-- เลือก Drawing --</option>';
-                            res.response.forEach(d => {
-                                options += `<option value="${d.id}">${d.drawing_name}</option>`;
-                            });
-                            $('#selectDrawing').html(options);
-                        } else {
-                            alert('ไม่สามารถโหลดข้อมูล Drawing ได้');
-                            $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
-                        }
-                    },
-                    error: function() {
-                        alert('เกิดข้อผิดพลาดขณะโหลด Drawing');
+                $.getJSON('../../service/timetracking/get_drawings.php', {
+                    project_id: projectId
+                }, function(res) {
+                    if (res.status === 'success') {
+                        let options = '<option value="">-- เลือก Drawing --</option>';
+                        res.response.forEach(d => {
+                            options += `<option value="${d.id}">${d.drawing_name}</option>`;
+                        });
+                        $('#selectDrawing').html(options);
+                    } else {
+                        alert('ไม่สามารถโหลด Drawing ได้');
                         $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
                     }
                 });
             });
 
-            // เปิด modal + โหลดข้อมูลโปรเจกต์
+            // เปิด Modal
             $('#btnAddTimeLog').click(function(e) {
                 e.preventDefault();
                 currentTimelogId = null;
@@ -291,7 +286,6 @@ require_once('../authen.php');
                 const projectId = $('#selectProject').val();
                 const drawingId = $('#selectDrawing').val();
                 const note = $('#inputNote').val();
-
                 if (!projectId || !drawingId) {
                     alert('โปรดเลือก Project และ Drawing ก่อนเริ่ม');
                     return;
@@ -312,9 +306,7 @@ require_once('../authen.php');
                         elapsedSeconds = 0;
                         updateTimerDisplay();
                         startTimer();
-                    } else {
-                        alert(res.message || 'เกิดข้อผิดพลาด');
-                    }
+                    } else alert(res.message || 'เกิดข้อผิดพลาด');
                 }, 'json');
             });
 
@@ -329,9 +321,7 @@ require_once('../authen.php');
                         $('#btnPause').prop('disabled', true);
                         $('#btnResume').prop('disabled', false);
                         stopTimer();
-                    } else {
-                        alert(res.message || 'เกิดข้อผิดพลาด');
-                    }
+                    } else alert(res.message || 'เกิดข้อผิดพลาด');
                 }, 'json');
             });
 
@@ -346,9 +336,7 @@ require_once('../authen.php');
                         $('#btnResume').prop('disabled', true);
                         $('#btnPause').prop('disabled', false);
                         startTimer();
-                    } else {
-                        alert(res.message || 'เกิดข้อผิดพลาด');
-                    }
+                    } else alert(res.message || 'เกิดข้อผิดพลาด');
                 }, 'json');
             });
 
@@ -365,12 +353,95 @@ require_once('../authen.php');
                         resetModal();
                         stopTimer();
                         $('#modalTimeTracking').modal('hide');
-                        $('#timeLogsTable').DataTable().ajax.reload();
-                    } else {
-                        alert(res.message || 'เกิดข้อผิดพลาด');
-                    }
+                        timeLogsTable.ajax.reload(null, false); // รีเฟรช DataTable
+                    } else alert(res.message || 'เกิดข้อผิดพลาด');
                 }, 'json');
             });
+
+            // เมื่อ Modal ปิด → รีเฟรช DataTable
+            $('#modalTimeTracking').on('hidden.bs.modal', function() {
+                timeLogsTable.ajax.reload(null, false);
+            });
+
+            // Edit Record         
+            $('#timeLogsTable').on('click', '.btn-edit', function() {
+                const id = $(this).data('id');
+
+                $.getJSON(`../../service/timetracking/get_timelog_by_id.php?id=${id}`, function(res) {
+                    if (res.status === 'success') {
+                        const log = res.response;
+                        currentTimelogId = log.id;
+
+                        // ตั้งค่า Project ก่อน
+                        $('#selectProject').val(log.project_id).prop('disabled', true);
+
+                        // โหลด Drawing ตาม Project
+                        $.getJSON('../../service/timetracking/get_drawings.php', {
+                            project_id: log.project_id
+                        }, function(drawingRes) {
+                            if (drawingRes.status === 'success') {
+                                let options = '<option value="">-- เลือก Drawing --</option>';
+                                drawingRes.response.forEach(d => {
+                                    options += `<option value="${d.id}">${d.drawing_name}</option>`;
+                                });
+                                $('#selectDrawing').html(options);
+
+                                // เลือก Drawing ที่ถูกต้อง
+                                $('#selectDrawing').val(log.drawing_id).prop('disabled', true);
+
+                                // เปิด Modal หลังโหลด Drawing
+                                $('#modalTimeTracking').modal('show');
+                            } else {
+                                alert('ไม่สามารถโหลด Drawing ได้');
+                            }
+                        });
+
+                        // Note
+                        $('#inputNote').val(log.note);
+
+                        // Status
+                        let statusClass = 'text-secondary font-weight-bold';
+                        if (log.status === 'running') statusClass = 'text-success font-weight-bold';
+                        else if (log.status === 'paused') statusClass = 'text-warning font-weight-bold';
+                        $('#statusText').text(log.status).removeClass().addClass(statusClass);
+
+                        // ปุ่ม
+                        if (log.status === 'running') {
+                            startTimer();
+                            $('#btnStart, #btnResume').prop('disabled', true);
+                            $('#btnPause, #btnStop').prop('disabled', false);
+                        } else if (log.status === 'paused') {
+                            $('#btnStart, #btnPause').prop('disabled', true);
+                            $('#btnResume, #btnStop').prop('disabled', false);
+                        } else {
+                            $('#btnStart').prop('disabled', false);
+                            $('#btnPause, #btnResume, #btnStop').prop('disabled', true);
+                        }
+
+                        // Timer
+                        elapsedSeconds = log.total_seconds || 0;
+                        updateTimerDisplay();
+                    } else {
+                        alert(res.message || 'ไม่สามารถโหลดข้อมูลได้');
+                    }
+                });
+            });
+
+
+            // ฟังก์ชันอัปเดต Timer
+            function updateTimerDisplay() {
+                let hrs = Math.floor(elapsedSeconds / 3600);
+                let mins = Math.floor((elapsedSeconds % 3600) / 60);
+                let secs = elapsedSeconds % 60;
+
+                hrs = (hrs < 10 ? '0' : '') + hrs;
+                mins = (mins < 10 ? '0' : '') + mins;
+                secs = (secs < 10 ? '0' : '') + secs;
+
+                $('#timerDisplay').text(`${hrs}:${mins}:${secs}`);
+            }
+
+
         });
     </script>
 </body>
