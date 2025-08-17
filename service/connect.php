@@ -9,23 +9,29 @@ error_reporting(E_ALL);
 date_default_timezone_set('Asia/Bangkok');
 
 /** Class Database สำหรับติดต่อฐานข้อมูล */
-class Database {
+class Database
+{
     private $host = "mysql";
     private $dbname = "encsystem";
     private $username = "devuser";
     private $password = "devpass"; // <== ถ้ามีรหัสผ่านให้ใส่ตรงนี้
     private $conn = null;
 
-    public function connect() {
+    public function connect()
+    {
         try {
-            $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset=utf8";
-            $this->conn = new PDO($dsn, $this->username, $this->password);
-            $this->conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+            $dsn = "mysql:host={$this->host};dbname={$this->dbname};charset=utf8mb4";
+            $options = [
+                PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+                PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC,
+                PDO::ATTR_PERSISTENT => true
+            ];
+            $this->conn = new PDO($dsn, $this->username, $this->password, $options);
         } catch (PDOException $exception) {
             echo "❌ ไม่สามารถเชื่อมต่อฐานข้อมูลได้: " . $exception->getMessage();
             exit();
         }
-        return $this->conn;
+        return $this->conn; 
     }
 }
 

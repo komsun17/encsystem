@@ -1,56 +1,42 @@
--- สร้างฐานข้อมูล
-CREATE DATABASE IF NOT EXISTS encsystem CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
-USE encsystem;
-
--- ตารางผู้ใช้งาน
-CREATE TABLE users (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    name VARCHAR(100),
-    username VARCHAR(50) UNIQUE,
-    password VARCHAR(255),
-    role ENUM('engineer','admin')
-);
-
--- ตารางโปรเจกต์
+-- Projects Table
 CREATE TABLE projects (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    project_code VARCHAR(50) UNIQUE,
-    project_name VARCHAR(100),
+    name VARCHAR(255) NOT NULL,
+    client_name VARCHAR(255),
     start_date DATE,
-    end_date DATE
+    end_date DATE,
+    status ENUM('active', 'completed', 'cancelled') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
 
--- ตาราง Drawing
+-- Drawings Table
 CREATE TABLE drawings (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    drawing_code VARCHAR(50),
-    drawing_name VARCHAR(100),
     project_id INT,
+    drawing_no VARCHAR(100) NOT NULL,
+    revision VARCHAR(10),
+    description TEXT,
+    status ENUM('active', 'archived') DEFAULT 'active',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (project_id) REFERENCES projects(id)
 );
 
--- ตารางบันทึกเวลาหลัก
-CREATE TABLE time_logs (
+-- Time Entries Table
+CREATE TABLE time_entries (
     id INT PRIMARY KEY AUTO_INCREMENT,
-    user_id INT NOT NULL,
-    project_id INT NOT NULL,
+    user_id INT,
+    project_id INT,
     drawing_id INT,
-    task_name VARCHAR(255),
-    start_time DATETIME NOT NULL,
+    start_time DATETIME,
     end_time DATETIME,
-    duration_minutes INT,
-    status ENUM('running','paused','stopped') DEFAULT 'running',
-    note TEXT,
+    duration INT,
+    activity_type VARCHAR(100),
+    status ENUM('active', 'paused', 'completed'),
+    notes TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     FOREIGN KEY (user_id) REFERENCES users(id),
     FOREIGN KEY (project_id) REFERENCES projects(id),
     FOREIGN KEY (drawing_id) REFERENCES drawings(id)
-);
-
--- ตารางเก็บช่วงเวลาย่อย
-CREATE TABLE time_log_segments (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    time_log_id INT NOT NULL,
-    segment_start DATETIME NOT NULL,
-    segment_end DATETIME,
-    FOREIGN KEY (time_log_id) REFERENCES time_logs(id)
 );
