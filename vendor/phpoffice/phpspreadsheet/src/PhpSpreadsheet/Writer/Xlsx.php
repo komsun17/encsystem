@@ -510,38 +510,41 @@ class Xlsx extends BaseWriter
 
         // Add media
         for ($i = 0; $i < $this->getDrawingHashTable()->count(); ++$i) {
-            if ($this->getDrawingHashTable()->getByIndex($i) instanceof WorksheetDrawing) {
+            $drawing = $this->getDrawingHashTable()->getByIndex($i);
+            if ($drawing instanceof WorksheetDrawing) {
                 $imageContents = null;
-                $imagePath = $this->getDrawingHashTable()->getByIndex($i)->getPath();
-                if ($imagePath === '') {
-                    continue;
-                }
-                if (strpos($imagePath, 'zip://') !== false) {
-                    $imagePath = substr($imagePath, 6);
-                    $imagePathSplitted = explode('#', $imagePath);
+                if (method_exists($drawing, 'getPath')) {
+                    $imagePath = $drawing->getPath();
+                    if ($imagePath === '') {
+                        continue;
+                    }
+                    if (strpos($imagePath, 'zip://') !== false) {
+                        $imagePath = substr($imagePath, 6);
+                        $imagePathSplitted = explode('#', $imagePath);
 
-                    $imageZip = new ZipArchive();
-                    $imageZip->open($imagePathSplitted[0]);
-                    $imageContents = $imageZip->getFromName($imagePathSplitted[1]);
-                    $imageZip->close();
-                    unset($imageZip);
-                } else {
-                    $imageContents = file_get_contents($imagePath);
-                }
+                        $imageZip = new ZipArchive();
+                        $imageZip->open($imagePathSplitted[0]);
+                        $imageContents = $imageZip->getFromName($imagePathSplitted[1]);
+                        $imageZip->close();
+                        unset($imageZip);
+                    } else {
+                        $imageContents = file_get_contents($imagePath);
+                    }
 
-                $zipContent['xl/media/' . $this->getDrawingHashTable()->getByIndex($i)->getIndexedFilename()] = $imageContents;
-            } elseif ($this->getDrawingHashTable()->getByIndex($i) instanceof MemoryDrawing) {
+                    $zipContent['xl/media/' . $drawing->getIndexedFilename()] = $imageContents;
+                }
+            } elseif ($drawing instanceof MemoryDrawing) {
                 ob_start();
                 /** @var callable */
-                $callable = $this->getDrawingHashTable()->getByIndex($i)->getRenderingFunction();
+                $callable = $drawing->getRenderingFunction();
                 call_user_func(
                     $callable,
-                    $this->getDrawingHashTable()->getByIndex($i)->getImageResource()
+                    $drawing->getImageResource()
                 );
                 $imageContents = ob_get_contents();
                 ob_end_clean();
 
-                $zipContent['xl/media/' . $this->getDrawingHashTable()->getByIndex($i)->getIndexedFilename()] = $imageContents;
+                $zipContent['xl/media/' . $drawing->getIndexedFilename()] = $imageContents;
             }
         }
 

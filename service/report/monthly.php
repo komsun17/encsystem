@@ -1,26 +1,30 @@
-composer config -g disable-tls true
-composer require phpoffice/phpspreadsheet<?php
+<?php
 session_start();
-header('Content-Type: application/json');
 require_once('../connect.php');
+header('Content-Type: application/json');
 
 try {
-    $userId = $_SESSION['user_id'];
+    $userId = $_SESSION['user_id'] ?? null;
+    
+    if (!$userId) {
+        throw new Exception('กรุณาเข้าสู่ระบบ');
+    }
+
     $month = $_GET['month'] ?? date('m');
     $year = $_GET['year'] ?? date('Y');
 
     // ดึงข้อมูลรายวันในเดือน
     $stmt = $conn->prepare("
         SELECT 
-            DATE(start_time) as work_date,
-            SUM(duration) as total_minutes,
-            COUNT(DISTINCT project_id) as project_count
-        FROM time_entries
-        WHERE user_id = :user_id 
-        AND MONTH(start_time) = :month
-        AND YEAR(start_time) = :year
-        AND status = 'completed'
-        GROUP BY DATE(start_time)
+            DATE(t.start_time) as work_date,
+            SUM(t.duration) as total_minutes,
+            COUNT(DISTINCT t.id) as entry_count
+        FROM time_entries t
+        WHERE t.user_id = :user_id 
+        AND MONTH(t.start_time) = :month
+        AND YEAR(t.start_time) = :year
+        AND t.status = 'completed'
+        GROUP BY DATE(t.start_time)
         ORDER BY work_date ASC
     ");
 
@@ -30,21 +34,22 @@ try {
         ':year' => $year
     ]);
 
-    $dailyStats = $stmt->fetchAll();
+    $dailyStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ดึงข้อมูลสรุปตาม Project
     $stmt = $conn->prepare("
         SELECT 
-            p.name as project_name,
+            p.id,
+            p.name,
             SUM(t.duration) as total_minutes,
-            COUNT(DISTINCT DATE(t.start_time)) as work_days
+            COUNT(DISTINCT t.id) as entry_count
         FROM time_entries t
         JOIN projects p ON t.project_id = p.id
         WHERE t.user_id = :user_id 
         AND MONTH(t.start_time) = :month
         AND YEAR(t.start_time) = :year
         AND t.status = 'completed'
-        GROUP BY p.id
+        GROUP BY p.id, p.name
         ORDER BY total_minutes DESC
     ");
 
@@ -54,16 +59,10 @@ try {
         ':year' => $year
     ]);
 
-    $projectStats = $stmt->fetchAll();
+    $projectStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // คำนวณเวลารวมทั้งเดือน
+    // คำนวณสรุปรวม
     $totalMonthlyMinutes = array_sum(array_column($dailyStats, 'total_minutes'));
-    
-    // คำนวณ % การใช้เวลาแต่ละ Project
-    foreach ($projectStats as &$project) {
-        $project['percentage'] = round(($project['total_minutes'] / $totalMonthlyMinutes) * 100, 2);
-        $project['total_hours'] = round($project['total_minutes'] / 60, 2);
-    }
 
     echo json_encode([
         'status' => 'success',
