@@ -1,18 +1,35 @@
 <?php
 session_start();
-header('Content-Type: application/json');
 require_once('../connect.php');
+require_once('../helpers/validator.php');
+header('Content-Type: application/json');
+
 
 try {
     $action = $_POST['action'] ?? $_GET['action'] ?? 'list';
     $userId = $_SESSION['user_id'] ?? null;
+    $validator = new Validator();
 
     if (!$userId) {
         throw new Exception('กรุณาเข้าสู่ระบบ');
     }
 
-    switch($action) {
+    switch ($action) {
         case 'create':
+            $rules = [
+                'name' => ['required' => true, 'max' => 100],
+                'client_name' => ['max' => 100],
+                'start_date' => ['required' => true, 'date' => true]
+            ];
+
+            if (!$validator->validate($_POST, $rules)) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'errors' => $validator->getErrors()
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
             $name = $_POST['name'] ?? '';
             $clientName = $_POST['client_name'] ?? '';
             $startDate = $_POST['start_date'] ?? '';
@@ -56,6 +73,21 @@ try {
             break;
 
         case 'update':
+            $rules = [
+                'id' => ['required' => true],
+                'name' => ['required' => true, 'max' => 100],
+                'client_name' => ['max' => 100],
+                'start_date' => ['required' => true, 'date' => true]
+            ];
+
+            if (!$validator->validate($_POST, $rules)) {
+                http_response_code(400);
+                echo json_encode([
+                    'status' => 'error',
+                    'errors' => $validator->getErrors()
+                ], JSON_UNESCAPED_UNICODE);
+                exit;
+            }
             $id = $_POST['id'] ?? '';
             $name = $_POST['name'] ?? '';
             $clientName = $_POST['client_name'] ?? '';
@@ -161,7 +193,7 @@ try {
             $sql .= " ORDER BY created_at DESC";
 
             $stmt = $conn->prepare($sql);
-            
+
             $params = [':status' => $status];
             if ($search) {
                 $params[':search'] = "%$search%";
@@ -174,10 +206,16 @@ try {
                 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
             ]);
     }
-
-} catch(Exception $e) {
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Database error: ' . $e->getMessage()
+    ], JSON_UNESCAPED_UNICODE);
+} catch (Exception $e) {
+    http_response_code(400);
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage()
-    ]);
+    ], JSON_UNESCAPED_UNICODE);
 }

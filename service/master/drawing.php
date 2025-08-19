@@ -2,6 +2,7 @@
 session_start();
 header('Content-Type: application/json');
 require_once('../connect.php');
+require_once('../helpers/validator.php');
 
 try {
     $action = $_POST['action'] ?? $_GET['action'] ?? 'list';
@@ -11,8 +12,34 @@ try {
         throw new Exception('กรุณาเข้าสู่ระบบ');
     }
 
-    switch($action) {
+    switch ($action) {
         case 'create':
+            $rules = [
+                'project_id' => ['required' => true],
+                'drawing_no' => ['required' => true, 'max' => 100],
+                'revision' => ['max' => 10]
+            ];
+
+            if (!$validator->validate($_POST, $rules)) {
+                throw new Exception(json_encode($validator->getErrors()));
+            }
+
+            // Check for duplicate drawing number
+            $stmt = $conn->prepare("
+                SELECT id FROM drawings 
+                WHERE drawing_no = :drawing_no 
+                AND project_id = :project_id
+                AND status != 'deleted'
+            ");
+
+            $stmt->execute([
+                ':drawing_no' => $_POST['drawing_no'],
+                ':project_id' => $_POST['project_id']
+            ]);
+
+            if ($stmt->rowCount() > 0) {
+                throw new Exception('Drawing No. นี้มีอยู่ในระบบแล้ว');
+            }
             $projectId = $_POST['project_id'] ?? '';
             $drawingNo = $_POST['drawing_no'] ?? '';
             $revision = $_POST['revision'] ?? '';
@@ -174,7 +201,7 @@ try {
             $sql .= " ORDER BY d.created_at DESC";
 
             $stmt = $conn->prepare($sql);
-            
+
             $params = [':status' => $status];
             if ($projectId) {
                 $params[':project_id'] = $projectId;
@@ -190,8 +217,14 @@ try {
                 'data' => $stmt->fetchAll(PDO::FETCH_ASSOC)
             ]);
     }
-
-} catch(Exception $e) {
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'Database error: ' . $e->getMessage()
+    ]);
+} catch (Exception $e) {
+    http_response_code(400);
     echo json_encode([
         'status' => 'error',
         'message' => $e->getMessage()
