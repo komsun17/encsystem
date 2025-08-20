@@ -1,449 +1,138 @@
 <?php
 session_start();
 if (!isset($_SESSION['user_id'])) {
-    header("Location: ../../login.php"); // ถ้า session ไม่มี → กลับหน้า login
+    header("Location: ../../login.php");
     exit;
 }
-//require_once('../authen.php');
 ?>
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta http-equiv="x-ua-compatible" content="ie=edge">
     <title>Time Tracking</title>
-    <link rel="shortcut icon" type="image/x-icon" href="../../assets/images/favicon.ico">
-    <!-- stylesheet -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Kanit">
     <link rel="stylesheet" href="../../plugins/fontawesome-free/css/all.min.css">
-    <link rel="stylesheet" href="../../plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css">
-    <link rel="stylesheet" href="../../plugins/bootstrap-toggle/bootstrap-toggle.min.css">
-    <link rel="stylesheet" href="../../plugins/toastr/toastr.min.css">
-    <link rel="stylesheet" href="../../assets/css/adminlte.min.css">
-    <link rel="stylesheet" href="../../assets/css/style.css">
     <link rel="stylesheet" href="../../plugins/datatables-bs4/css/dataTables.bootstrap4.min.css">
-    <link rel="stylesheet" href="../../plugins/datatables-responsive/css/responsive.bootstrap4.min.css">
-
-
+    <link rel="stylesheet" href="../../plugins/select2/css/select2.min.css">
+    <link rel="stylesheet" href="../../assets/css/adminlte.min.css">
+    <link rel="stylesheet" href="../../plugins/sweetalert2-theme-bootstrap-4/bootstrap-4.min.css">
+    <script src="../../plugins/sweetalert2/sweetalert2.min.js"></script>
+    <script src="../../plugins/moment/moment.min.js"></script>
 </head>
 
 <body class="hold-transition sidebar-mini">
     <div class="wrapper">
         <?php include_once('../includes/sidebar.php') ?>
-        <div class="content-wrapper pt-3">
+
+        <div class="content-wrapper">
+            <div class="content-header">
+                <div class="container-fluid">
+                    <div class="row mb-2">
+                        <div class="col-sm-6">
+                            <h1><i class="fas fa-clock"></i> Time Tracking</h1>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="content">
                 <div class="container-fluid">
-                    <div class="row">
-                        <div class="col-12">
-                            <div class="card">
-                                <div class="card-header border-0 pt-4">
-                                    <h4><i class="fas fa-clock"></i> Time Tracking</h4>
-                                    <a href="#" id="btnAddTimeLog" class="btn btn-primary mt-3">
-                                        <i class="fas fa-plus"></i>&nbsp; Record time
-                                    </a>
-                                </div>
-                                <div class="card-body">
-                                    <table id="timeLogsTable" class="display" style="width:100%">
-                                    </table>
-                                </div>
-                            </div>
+                    <div class="card">
+                        <div class="card-header">
+                            <h3 class="card-title">Time Logs</h3>
+                            <button type="button" class="btn btn-primary float-right" data-toggle="modal" data-target="#modalTimer">
+                                <i class="fas fa-plus"></i> New Timer
+                            </button>
+                        </div>
+                        <div class="card-body">
+                            <table id="timeLogsTable" class="table table-bordered table-striped">
+                                <thead>
+                                    <tr>
+                                        <th>วันที่</th>
+                                        <th>โครงการ</th>
+                                        <th>Drawing No.</th>
+                                        <th>กิจกรรม</th>
+                                        <th>เวลาที่ใช้</th>
+                                        <th>หมายเหตุ</th>
+                                        <th>สถานะ</th>
+                                    </tr>
+                                </thead>
+                            </table>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-        <!-- Modal Time Tracking -->
-        <div class="modal fade" id="modalTimeTracking" tabindex="-1" aria-labelledby="modalTimeTrackingLabel" aria-hidden="true">
-            <div class="modal-dialog modal-dialog-centered modal-md">
-                <div class="modal-content rounded shadow-lg border-0">
-                    <div class="modal-header bg-primary text-white">
-                        <h5 class="modal-title d-flex align-items-center" id="modalTimeTrackingLabel">
-                            <i class="fas fa-clock mr-2"></i> บันทึกเวลา
-                        </h5>
-                        <button type="button" class="close text-white" data-dismiss="modal" aria-label="ปิด">
-                            <span aria-hidden="true" class="h4">&times;</span>
+    </div>
+
+    <!-- Timer Modal -->
+    <div class="modal fade" id="modalTimer" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="fas fa-clock"></i> Time Tracking
+                    </h5>
+                    <button type="button" class="close" data-dismiss="modal">
+                        <span>&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label>Project</label>
+                        <select class="form-control select2" id="selectProject">
+                            <option value="">Select Project</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Drawing</label>
+                        <input type="text" class="form-control" id="inputDrawing" placeholder="Input Drawing No.">
+                    </div>
+                    <div class="form-group">
+                        <label>Activity</label>
+                        <select class="form-control" id="selectActivity">
+                            <option value="design">Design</option>
+                            <option value="review">Review</option>
+                            <option value="modify">Modify</option>
+                            <option value="meeting">Meeting</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Note</label>
+                        <textarea class="form-control" id="inputNote" rows="3"></textarea>
+                    </div>
+                    <div class="text-center my-4">
+                        <div class="h2" id="timerDisplay">00:00:00</div>
+                        <div class="badge badge-secondary" id="statusBadge">Not Started</div>
+                    </div>
+                    <div class="text-center">
+                        <button id="btnStart" class="btn btn-success">
+                            <i class="fas fa-play"></i> Start
+                        </button>
+                        <button id="btnPause" class="btn btn-warning" disabled>
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button id="btnStop" class="btn btn-danger" disabled>
+                            <i class="fas fa-stop"></i> Stop
                         </button>
                     </div>
-                    <div class="modal-body px-4 py-4">
-                        <div class="form-group">
-                            <label for="selectProject" class="font-weight-bold text-secondary">โปรเจกต์ <span class="text-danger">*</span></label>
-                            <select id="selectProject" class="form-control form-control-lg rounded" required>
-                                <option value="">กำลังโหลดข้อมูล...</option>
-                            </select>
-                        </div>
-                        <div class="form-group mt-3">
-                            <label for="selectDrawing" class="font-weight-bold text-secondary">Drawing <span class="text-danger">*</span></label>
-                            <select id="selectDrawing" class="form-control form-control-lg rounded" required>
-                                <option value="">เลือกโปรเจกต์ก่อน</option>
-                            </select>
-                        </div>
-
-                        <div class="form-group mt-3">
-                            <label for="inputNote" class="font-weight-bold text-secondary">หมายเหตุ (Note)</label>
-                            <textarea id="inputNote" class="form-control form-control-lg rounded" rows="3" placeholder="ใส่หมายเหตุเพิ่มเติม"></textarea>
-                        </div>
-
-                        <div class="text-center mt-4">
-                            <div id="timerDisplay" class="h3 font-weight-bold text-primary mb-3" style="letter-spacing: 0.15em;">00:00:00</div>
-                            <small class="text-muted">เวลาที่ใช้งาน (hh:mm:ss)</small>
-                        </div>
-
-                        <div class="d-flex justify-content-center btn-group-circle mt-4">
-                            <button id="btnStart" class="btn btn-success btn-circle shadow" title="เริ่ม">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button id="btnPause" class="btn btn-warning btn-circle shadow" disabled title="พัก">
-                                <i class="fas fa-pause"></i>
-                            </button>
-                            <button id="btnResume" class="btn btn-info btn-circle shadow" disabled title="ทำงานต่อ">
-                                <i class="fas fa-play"></i>
-                            </button>
-                            <button id="btnStop" class="btn btn-danger btn-circle shadow" disabled title="หยุด">
-                                <i class="fas fa-stop"></i>
-                            </button>
-                        </div>
-
-                        <div class="mt-4 text-center">
-                            <small>สถานะ: <span id="statusText" class="font-weight-bold text-secondary">ยังไม่เริ่ม</span></small>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
-
-
     </div>
-    <!-- scripts -->
+
+    <!-- Scripts -->
     <script src="../../plugins/jquery/jquery.min.js"></script>
     <script src="../../plugins/bootstrap/js/bootstrap.bundle.min.js"></script>
-    <script src="../../plugins/sweetalert2/sweetalert2.min.js"></script>
-    <script src="../../assets/js/adminlte.min.js"></script>
-    <script src="../../plugins/bootstrap-toggle/bootstrap-toggle.min.js"></script>
-    <script src="../../plugins/toastr/toastr.min.js"></script>
+    <script src="../../plugins/moment/moment.min.js"></script>
+    <script src="../../plugins/select2/js/select2.full.min.js"></script>
     <script src="../../plugins/datatables/jquery.dataTables.min.js"></script>
     <script src="../../plugins/datatables-bs4/js/dataTables.bootstrap4.min.js"></script>
-    <script src="../../plugins/datatables-responsive/js/dataTables.responsive.min.js"></script>
-    <script src="../../plugins/datatables-responsive/js/responsive.bootstrap4.min.js"></script>
-
-    <script>
-        $(document).ready(function() {
-            // สร้าง DataTable และเก็บ instance
-            let timeLogsTable = $('#timeLogsTable').DataTable({
-                ajax: {
-                    url: "../../service/timetracking/get_timelog.php",
-                    dataSrc: function(json) {
-                        if (json.status === "success") {
-                            return json.response;
-                        } else {
-                            console.error(json.message || "ไม่สามารถดึงข้อมูลได้");
-                            return [];
-                        }
-                    },
-                    error: function(xhr, error, thrown) {
-                        console.error("Ajax error:", error, thrown);
-                    }
-                },
-                columns: [{
-                        data: "username",
-                        title: "User Name"
-                    },
-                    {
-                        data: "project_name",
-                        title: "Project"
-                    },
-                    {
-                        data: "drawing_name",
-                        title: "Drawing"
-                    },
-                    {
-                        data: "start_time",
-                        title: "Start Time"
-                    },
-                    {
-                        data: "end_time",
-                        title: "End Time"
-                    },
-                    {
-                        data: "duration_minutes",
-                        title: "Duration (min)",
-                        render: function(data) {
-                            return data ? data + " นาที" : "-";
-                        }
-                    },
-                    {
-                        data: "note",
-                        title: "Note"
-                    },
-                    {
-                        data: null,
-                        title: "Action",
-                        render: function(data) {
-                            return `<button class="btn btn-sm btn-info btn-edit" data-id="${data.id}"><i class="fas fa-edit"></i></button>`;
-                        }
-                    }
-                ],
-                language: {
-                    url: "../../assets/datatables/i18n/th.json"
-                }
-            });
-
-            // ตัวแปรจับเวลา
-            let currentTimelogId = null;
-            let timerInterval = null;
-            let elapsedSeconds = 0;
-            let timerRunning = false;
-
-            function updateTimerDisplay() {
-                let hrs = Math.floor(elapsedSeconds / 3600);
-                let mins = Math.floor((elapsedSeconds % 3600) / 60);
-                let secs = elapsedSeconds % 60;
-                let display =
-                    (hrs < 10 ? '0' : '') + hrs + ':' +
-                    (mins < 10 ? '0' : '') + mins + ':' +
-                    (secs < 10 ? '0' : '') + secs;
-                $('#timerDisplay').text(display);
-            }
-
-            function startTimer() {
-                if (timerRunning) return;
-                timerRunning = true;
-                timerInterval = setInterval(() => {
-                    elapsedSeconds++;
-                    updateTimerDisplay();
-                }, 1000);
-            }
-
-            function stopTimer() {
-                timerRunning = false;
-                clearInterval(timerInterval);
-            }
-
-            function resetModal() {
-                $('#statusText').text('ยังไม่เริ่ม')
-                    .removeClass('text-success text-warning text-info text-danger')
-                    .addClass('text-secondary');
-                $('#btnStart').prop('disabled', false);
-                $('#btnPause, #btnResume, #btnStop').prop('disabled', true);
-                $('#selectProject, #selectDrawing').prop('disabled', false).val('');
-                $('#inputNote').val('');
-                $('#timerDisplay').text('00:00:00');
-            }
-
-            function loadProjects() {
-                $('#selectProject').html('<option value="">กำลังโหลดข้อมูล...</option>');
-                $.getJSON('../../service/timetracking/get_projects.php', function(res) {
-                    if (res.status === 'success') {
-                        let options = '<option value="">-- เลือกโปรเจกต์ --</option>';
-                        res.response.forEach(p => {
-                            options += `<option value="${p.id}">${p.project_name}</option>`;
-                        });
-                        $('#selectProject').html(options);
-                        $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
-                    } else {
-                        alert('ไม่สามารถโหลดข้อมูลโปรเจกต์ได้');
-                    }
-                });
-            }
-
-            $('#selectProject').change(function() {
-                const projectId = $(this).val();
-                if (!projectId) {
-                    $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
-                    return;
-                }
-                $('#selectDrawing').html('<option value="">กำลังโหลดข้อมูล...</option>');
-                $.getJSON('../../service/timetracking/get_drawings.php', {
-                    project_id: projectId
-                }, function(res) {
-                    if (res.status === 'success') {
-                        let options = '<option value="">-- เลือก Drawing --</option>';
-                        res.response.forEach(d => {
-                            options += `<option value="${d.id}">${d.drawing_name}</option>`;
-                        });
-                        $('#selectDrawing').html(options);
-                    } else {
-                        alert('ไม่สามารถโหลด Drawing ได้');
-                        $('#selectDrawing').html('<option value="">เลือกโปรเจกต์ก่อน</option>');
-                    }
-                });
-            });
-
-            // เปิด Modal
-            $('#btnAddTimeLog').click(function(e) {
-                e.preventDefault();
-                currentTimelogId = null;
-                elapsedSeconds = 0;
-                stopTimer();
-                resetModal();
-                loadProjects();
-                $('#modalTimeTracking').modal('show');
-            });
-
-            // ปุ่ม Start
-            $('#btnStart').click(function() {
-                const projectId = $('#selectProject').val();
-                const drawingId = $('#selectDrawing').val();
-                const note = $('#inputNote').val();
-                if (!projectId || !drawingId) {
-                    alert('โปรดเลือก Project และ Drawing ก่อนเริ่ม');
-                    return;
-                }
-
-                $.post('../../service/timetracking/start.php', {
-                    project_id: projectId,
-                    drawing_id: drawingId,
-                    note: note
-                }, function(res) {
-                    if (res.status === 'success') {
-                        currentTimelogId = res.timelog_id;
-                        $('#statusText').text('กำลังทำงาน').removeClass().addClass('text-success font-weight-bold');
-                        $('#btnStart').prop('disabled', true);
-                        $('#btnPause, #btnStop').prop('disabled', false);
-                        $('#btnResume').prop('disabled', true);
-                        $('#selectProject, #selectDrawing').prop('disabled', true);
-                        elapsedSeconds = 0;
-                        updateTimerDisplay();
-                        startTimer();
-                    } else alert(res.message || 'เกิดข้อผิดพลาด');
-                }, 'json');
-            });
-
-            // ปุ่ม Pause
-            $('#btnPause').click(function() {
-                if (!currentTimelogId) return;
-                $.post('../../service/timetracking/pause.php', {
-                    timelog_id: currentTimelogId
-                }, function(res) {
-                    if (res.status === 'success') {
-                        $('#statusText').text('พักงาน').removeClass().addClass('text-warning font-weight-bold');
-                        $('#btnPause').prop('disabled', true);
-                        $('#btnResume').prop('disabled', false);
-                        stopTimer();
-                    } else alert(res.message || 'เกิดข้อผิดพลาด');
-                }, 'json');
-            });
-
-            // ปุ่ม Resume
-            $('#btnResume').click(function() {
-                if (!currentTimelogId) return;
-                $.post('../../service/timetracking/resume.php', {
-                    timelog_id: currentTimelogId
-                }, function(res) {
-                    if (res.status === 'success') {
-                        $('#statusText').text('กำลังทำงานต่อ').removeClass().addClass('text-info font-weight-bold');
-                        $('#btnResume').prop('disabled', true);
-                        $('#btnPause').prop('disabled', false);
-                        startTimer();
-                    } else alert(res.message || 'เกิดข้อผิดพลาด');
-                }, 'json');
-            });
-
-            // ปุ่ม Stop
-            $('#btnStop').click(function() {
-                if (!currentTimelogId) return;
-                $.post('../../service/timetracking/stop.php', {
-                    timelog_id: currentTimelogId,
-                    note: $('#inputNote').val()
-                }, function(res) {
-                    if (res.status === 'success') {
-                        alert('บันทึกเวลาสำเร็จ');
-                        currentTimelogId = null;
-                        resetModal();
-                        stopTimer();
-                        $('#modalTimeTracking').modal('hide');
-                        timeLogsTable.ajax.reload(null, false); // รีเฟรช DataTable
-                    } else alert(res.message || 'เกิดข้อผิดพลาด');
-                }, 'json');
-            });
-
-            // เมื่อ Modal ปิด → รีเฟรช DataTable
-            $('#modalTimeTracking').on('hidden.bs.modal', function() {
-                timeLogsTable.ajax.reload(null, false);
-            });
-
-            // Edit Record         
-            $('#timeLogsTable').on('click', '.btn-edit', function() {
-                const id = $(this).data('id');
-
-                $.getJSON(`../../service/timetracking/get_timelog_by_id.php?id=${id}`, function(res) {
-                    if (res.status === 'success') {
-                        const log = res.response;
-                        currentTimelogId = log.id;
-
-                        // ตั้งค่า Project ก่อน
-                        $('#selectProject').val(log.project_id).prop('disabled', true);
-
-                        // โหลด Drawing ตาม Project
-                        $.getJSON('../../service/timetracking/get_drawings.php', {
-                            project_id: log.project_id
-                        }, function(drawingRes) {
-                            if (drawingRes.status === 'success') {
-                                let options = '<option value="">-- เลือก Drawing --</option>';
-                                drawingRes.response.forEach(d => {
-                                    options += `<option value="${d.id}">${d.drawing_name}</option>`;
-                                });
-                                $('#selectDrawing').html(options);
-
-                                // เลือก Drawing ที่ถูกต้อง
-                                $('#selectDrawing').val(log.drawing_id).prop('disabled', true);
-
-                                // เปิด Modal หลังโหลด Drawing
-                                $('#modalTimeTracking').modal('show');
-                            } else {
-                                alert('ไม่สามารถโหลด Drawing ได้');
-                            }
-                        });
-
-                        // Note
-                        $('#inputNote').val(log.note);
-
-                        // Status
-                        let statusClass = 'text-secondary font-weight-bold';
-                        if (log.status === 'running') statusClass = 'text-success font-weight-bold';
-                        else if (log.status === 'paused') statusClass = 'text-warning font-weight-bold';
-                        $('#statusText').text(log.status).removeClass().addClass(statusClass);
-
-                        // ปุ่ม
-                        if (log.status === 'running') {
-                            startTimer();
-                            $('#btnStart, #btnResume').prop('disabled', true);
-                            $('#btnPause, #btnStop').prop('disabled', false);
-                        } else if (log.status === 'paused') {
-                            $('#btnStart, #btnPause').prop('disabled', true);
-                            $('#btnResume, #btnStop').prop('disabled', false);
-                        } else {
-                            $('#btnStart').prop('disabled', false);
-                            $('#btnPause, #btnResume, #btnStop').prop('disabled', true);
-                        }
-
-                        // Timer
-                        elapsedSeconds = log.total_seconds || 0;
-                        updateTimerDisplay();
-                    } else {
-                        alert(res.message || 'ไม่สามารถโหลดข้อมูลได้');
-                    }
-                });
-            });
-
-
-            // ฟังก์ชันอัปเดต Timer
-            function updateTimerDisplay() {
-                let hrs = Math.floor(elapsedSeconds / 3600);
-                let mins = Math.floor((elapsedSeconds % 3600) / 60);
-                let secs = elapsedSeconds % 60;
-
-                hrs = (hrs < 10 ? '0' : '') + hrs;
-                mins = (mins < 10 ? '0' : '') + mins;
-                secs = (secs < 10 ? '0' : '') + secs;
-
-                $('#timerDisplay').text(`${hrs}:${mins}:${secs}`);
-            }
-
-
-        });
-    </script>
+    <script src="../../assets/js/adminlte.min.js"></script>
+    <script src="../../assets/js/timetracking.js"></script>
 </body>
 
 </html>

@@ -1,14 +1,31 @@
 <?php
 session_start();
-require '../connect.php';
+header('Content-Type: application/json; charset=utf-8');
+require_once('../connect.php');
 
-$sql = "SELECT id, project_name FROM projects ORDER BY project_name";
-$stmt = $conn->prepare($sql);
-$stmt->execute();
-$projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+try {
+    if (!isset($_SESSION['user_id'])) {
+        throw new Exception('กรุณาเข้าสู่ระบบ');
+    }
 
-header('Content-Type: application/json');
-echo json_encode([
-    "status" => "success",
-    "response" => $projects
-]);
+    $stmt = $conn->prepare("
+        SELECT id, name 
+        FROM projects 
+        WHERE status = 'active' 
+        ORDER BY name ASC
+    ");
+    $stmt->execute();
+    $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+    echo json_encode([
+        'status' => 'success',
+        'data' => $projects
+    ]);
+
+} catch (Exception $e) {
+    http_response_code(400);
+    echo json_encode([
+        'status' => 'error',
+        'message' => $e->getMessage()
+    ]);
+}
