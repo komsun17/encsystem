@@ -5,41 +5,24 @@ require_once('../connect.php');
 
 try {
     if (!isset($_SESSION['user_id'])) {
-        throw new Exception('กรุณาเข้าสู่ระบบ');
+        throw new Exception('Please login');
     }
 
     $userId = $_SESSION['user_id'];
-
-    // Debug connection
-    try {
-        $conn->query("SELECT 1");
-    } catch (PDOException $e) {
-        error_log("Connection test failed: " . $e->getMessage());
-        throw new Exception('Database connection test failed');
-    }
-
-    // Check if tables exist
-    $tables = $conn->query("SHOW TABLES")->fetchAll(PDO::FETCH_COLUMN);
-    if (!in_array('time_entries', $tables) || 
-        !in_array('projects', $tables) || 
-        !in_array('drawings', $tables)) {
-        throw new Exception('Required tables do not exist');
-    }
 
     $stmt = $conn->prepare("
         SELECT 
             t.id,
             t.start_time,
             t.end_time,
-            t.duration_minutes,
             t.activity_type,
             t.note,
             t.status,
-            p.name as project_name,
-            d.drawing_no
+            t.drawing_no,
+            t.duration, -- duration in seconds
+            p.name as project_name
         FROM time_entries t
         LEFT JOIN projects p ON t.project_id = p.id
-        LEFT JOIN drawings d ON t.drawing_id = d.id
         WHERE t.user_id = :user_id
         ORDER BY t.start_time DESC
     ");

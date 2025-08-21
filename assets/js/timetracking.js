@@ -1,74 +1,116 @@
 $(document).ready(function () {
-  // Initialize variables
   let timeLogsTable;
   let currentTimelogId = null;
   let timerInterval = null;
   let elapsedSeconds = 0;
   let timerRunning = false;
+  let durationInterval = null;
+  let editDurationInterval = null;
 
-  // Initialize Select2
+  function formatDurationFromSeconds(seconds) {
+    const duration = moment.duration(seconds, 'seconds');
+    const hrs = Math.floor(duration.asHours());
+    const mins = duration.minutes();
+    const secs = duration.seconds();
+    return (
+      (hrs ? hrs + "h " : "") +
+      (mins ? mins + "m " : "") +
+      (secs ? secs + "s" : "")
+    ).trim() || "0s";
+  }
+
+  function formatDuration(start, end) {
+    const duration = moment.duration(end.diff(start));
+    const hrs = Math.floor(duration.asHours());
+    const mins = duration.minutes();
+    const secs = duration.seconds();
+    return (
+      (hrs ? hrs + "h " : "") +
+      (mins ? mins + "m " : "") +
+      (secs ? secs + "s" : "")
+    ).trim() || "0s";
+  }
+
   $("#selectProject").select2({
     width: "100%",
     dropdownParent: $("#modalTimer"),
   });
 
-  // Initialize DataTable
   timeLogsTable = $("#timeLogsTable").DataTable({
     processing: true,
     serverSide: false,
+    responsive: true,
     ajax: {
       url: "../../service/timetracking/get_timelog.php",
       type: "GET",
       dataSrc: "data",
-      error: function (xhr, error, thrown) {
-        console.error("DataTable error:", error);
-        $(".dataTables_processing").hide();
-      },
     },
     columns: [
       {
+        data: null,
+        title: "No.",
+        render: function (data, type, row, meta) {
+          return meta.row + 1;
+        },
+        className: "text-center",
+        width: "40px",
+      },
+      {
         data: "start_time",
-        title: "วันที่",
+        title: "Date",
         render: function (data) {
           return moment(data).format("DD/MM/YYYY HH:mm");
         },
       },
-      { data: "project_name", title: "โครงการ" },
+      { data: "project_name", title: "Project" },
       { data: "drawing_no", title: "Drawing No." },
       {
         data: "activity_type",
-        title: "กิจกรรม",
+        title: "Activity",
         render: function (data) {
           const activities = {
-            design: "ออกแบบ",
-            review: "ทบทวนแบบ",
-            modify: "แก้ไขแบบ",
-            meeting: "ประชุม",
-            other: "อื่นๆ",
+            design: "Design",
+            review: "Review",
+            modify: "Modify",
+            meeting: "Meeting",
+            other: "Other",
           };
           return activities[data] || data;
         },
       },
       {
-        data: "duration_minutes",
-        title: "เวลาที่ใช้",
-        render: function (data) {
-          if (!data) return "-";
-          const hrs = Math.floor(data / 60);
-          const mins = data % 60;
-          return (hrs ? hrs + " ชม. " : "") + (mins ? mins + " นาที" : "");
+        data: null,
+        title: "Duration",
+        render: function (data, type, row) {
+          // 1. If duration field exists, use it (Paused/Finished)
+          if (row.duration && row.duration > 0) {
+            return formatDurationFromSeconds(row.duration);
+          }
+          // 2. If end_time exists, calculate from start_time to end_time
+          if (row.end_time && row.start_time) {
+            const start = moment(row.start_time);
+            const end = moment(row.end_time);
+            return formatDuration(start, end);
+          }
+          // 3. If status is active, show real-time
+          if (row.status === "active" && row.start_time && !row.end_time) {
+            const start = moment(row.start_time);
+            const now = moment();
+            return formatDuration(start, now) + " (in progress)";
+          }
+          return "-";
         },
       },
       {
         data: "note",
-        title: "หมายเหตุ",
+        title: "Note",
         render: function (data) {
           return data || "-";
         },
       },
       {
         data: "status",
-        title: "สถานะ",
+        title: "Status",
         render: function (data) {
           const statusClass =
             {
@@ -76,72 +118,102 @@ $(document).ready(function () {
               completed: "badge-success",
               paused: "badge-warning",
             }[data] || "badge-secondary";
-
           const statusText =
             {
-              active: "กำลังทำงาน",
-              completed: "เสร็จสิ้น",
-              paused: "พัก",
+              active: "Processing",
+              completed: "Finished",
+              paused: "Pause",
             }[data] || data;
-
           return `<span class="badge ${statusClass}">${statusText}</span>`;
         },
       },
+      {
+        data: null,
+        title: "Action",
+        orderable: false,
+        render: function (data, type, row, meta) {
+          return `<button class="btn btn-sm btn-warning btn-edit" 
+            data-id="${row.id}" 
+            data-status="${row.status}" 
+            data-note="${row.note || ""}">
+            <i class="fas fa-edit"></i> Edit</button>`;
+        },
+        className: "text-center",
+        width: "80px",
+      }
     ],
-    order: [[0, "desc"]],
-    pageLength: 10,
-    language: {
-      url: "../../plugins/datatables/i18n/th.json",
-    },
+    order: [[1, "desc"]],
+    pageLength: 10
+  });
+
+  // Real-time update Duration in table (only for Processing)
+  function startDurationUpdater() {
+    if (durationInterval) clearInterval(durationInterval);
+    durationInterval = setInterval(function () {
+      timeLogsTable.rows().every(function (rowIdx, tableLoop, rowLoop) {
+        const row = this.data();
+        // Only update if status is active and no end_time/duration
+        if (row.status === "active" && row.start_time && !row.end_time && (!row.duration || row.duration == 0)) {
+          const start = moment(row.start_time);
+          const now = moment();
+          const durationText = formatDuration(start, now) + " (in progress)";
+          $(timeLogsTable.cell(rowIdx, 5).node()).html(durationText);
+        }
+      });
+    }, 1000);
+  }
+  timeLogsTable.on('draw', function () {
+    startDurationUpdater();
+  });
+  startDurationUpdater();
+
+  // Responsive fix after modal close
+  $("#modalTimer").on("hidden.bs.modal", function () {
+    setTimeout(function () {
+      timeLogsTable.columns.adjust().responsive.recalc();
+    }, 200);
   });
 
   // Load Projects when modal opens
   $("#modalTimer").on("shown.bs.modal", function () {
     loadProjects();
+    $("#timerDisplay").text(moment().format("HH:mm:ss"));
   });
 
-  // Load Projects Function
   function loadProjects() {
-    console.log("Loading projects...");
     $.ajax({
       url: "../../service/timetracking/get_projects.php",
       type: "GET",
       dataType: "json",
       success: function (res) {
-        console.log("Projects response:", res);
         if (res.status === "success") {
-          let options = '<option value="">-- เลือกโครงการ --</option>';
+          let options = '<option value="">-- Select Project --</option>';
           res.data.forEach(function (project) {
             options += `<option value="${project.id}">${project.name}</option>`;
           });
           $("#selectProject").html(options);
         } else {
-          console.error("Failed to load projects:", res.message);
-          Swal.fire("Error", "ไม่สามารถโหลดข้อมูลโครงการได้", "error");
+          Swal.fire("Error", "Cannot load project data", "error");
         }
       },
-      error: function (xhr, status, error) {
-        console.error("Ajax error:", error);
-        console.error("Response:", xhr.responseText);
-        Swal.fire("Error", "เกิดข้อผิดพลาดในการโหลดข้อมูล", "error");
+      error: function () {
+        Swal.fire("Error", "Error loading project data", "error");
       },
     });
   }
 
-  // Add debug for project loading
-  $("#selectProject").on("change", function () {
-    console.log("Selected project:", {
-      id: $(this).val(),
-      text: $(this).find("option:selected").text(),
-    });
+  $("#inputDrawing").on("input", function () {
+    if ($(this).val().trim() === "") {
+      $(this).addClass("is-invalid");
+    } else {
+      $(this).removeClass("is-invalid");
+    }
   });
 
-  // Timer Functions
   function updateTimerDisplay() {
     const hrs = Math.floor(elapsedSeconds / 3600);
     const mins = Math.floor((elapsedSeconds % 3600) / 60);
     const secs = elapsedSeconds % 60;
-
     const display =
       (hrs < 10 ? "0" : "") +
       hrs +
@@ -151,7 +223,6 @@ $(document).ready(function () {
       ":" +
       (secs < 10 ? "0" : "") +
       secs;
-
     $("#timerDisplay").text(display);
   }
 
@@ -169,7 +240,6 @@ $(document).ready(function () {
     clearInterval(timerInterval);
   }
 
-  // UI Update Functions
   function updateUIOnStart() {
     $("#btnStart").prop("disabled", true);
     $("#btnPause, #btnStop").prop("disabled", false);
@@ -177,42 +247,33 @@ $(document).ready(function () {
     $("#statusBadge")
       .removeClass()
       .addClass("badge badge-success")
-      .text("กำลังทำงาน");
+      .text("Processing");
   }
 
   function updateUIOnPause() {
     $("#btnPause").prop("disabled", true);
     $("#btnStart").prop("disabled", false);
-    $("#statusBadge").removeClass().addClass("badge badge-warning").text("พัก");
+    $("#statusBadge").removeClass().addClass("badge badge-warning").text("Pause");
   }
 
-  // Start Timer Button - แก้ไขการส่งข้อมูล
   $("#btnStart").click(function () {
-    // Get form data with validation
     const projectId = $("#selectProject").val();
     const drawingNo = $("#inputDrawing").val().trim();
     const activityType = $("#selectActivity").val();
     const note = $("#inputNote").val().trim();
 
-    console.log("Form values before sending:", {
-      projectId: projectId,
-      drawingNo: drawingNo,
-      activityType: activityType,
-      note: note,
-    });
-
-    // Validation
     if (!projectId) {
-      Swal.fire("แจ้งเตือน", "กรุณาเลือกโครงการ", "warning");
+      Swal.fire("Warning", "Please select a project", "warning");
       return;
     }
-
     if (!drawingNo) {
-      Swal.fire("แจ้งเตือน", "กรุณาระบุ Drawing No.", "warning");
+      $("#inputDrawing").addClass("is-invalid");
+      Swal.fire("Warning", "Please enter Drawing No.", "warning");
       return;
+    } else {
+      $("#inputDrawing").removeClass("is-invalid");
     }
 
-    // Send with proper content type
     $.ajax({
       url: "../../service/timetracking/start_timer.php",
       type: "POST",
@@ -224,78 +285,56 @@ $(document).ready(function () {
         note: note,
       },
       dataType: "json",
-      beforeSend: function () {
-        console.log("Sending AJAX request...");
-      },
       success: function (res) {
-        console.log("Success response:", res);
         if (res.status === "success") {
           currentTimelogId = res.data.id;
           startTimer();
           updateUIOnStart();
           timeLogsTable.ajax.reload();
-          Swal.fire("สำเร็จ", "เริ่มจับเวลาแล้ว", "success");
+          Swal.fire("Success", "Timer started", "success");
         } else {
           Swal.fire("Error", res.message, "error");
         }
       },
-      error: function (xhr, status, error) {
-        console.error("AJAX Error Details:", {
-          status: status,
-          error: error,
-          responseText: xhr.responseText,
-          readyState: xhr.readyState,
-          statusText: xhr.statusText,
-        });
-        Swal.fire("Error", "ไม่สามารถเริ่มจับเวลาได้", "error");
+      error: function () {
+        Swal.fire("Error", "Cannot start timer", "error");
       },
     });
   });
 
-  // Pause Timer Button
   $("#btnPause").click(function () {
-    console.log("Pause button clicked");
     if (!currentTimelogId) return;
-
     $.ajax({
       url: "../../service/timetracking/pause_timer.php",
       type: "POST",
       data: { timelog_id: currentTimelogId },
       dataType: "json",
       success: function (res) {
-        console.log("Pause timer response:", res);
         if (res.status === "success") {
           stopTimer();
           updateUIOnPause();
           timeLogsTable.ajax.reload();
-          console.log("Timer paused successfully");
         } else {
-          console.error("Pause timer failed:", res.message);
-          Swal.fire("Error", res.message || "เกิดข้อผิดพลาด", "error");
+          Swal.fire("Error", res.message || "Error occurred", "error");
         }
       },
-      error: function (xhr, status, error) {
-        console.error("Pause timer error:", error);
-        Swal.fire("Error", "ไม่สามารถหยุดจับเวลาชั่วคราว", "error");
+      error: function () {
+        Swal.fire("Error", "Cannot pause timer", "error");
       },
     });
   });
 
-  // Stop Timer Button
   $("#btnStop").click(function () {
-    console.log("Stop button clicked");
     if (!currentTimelogId) return;
-
     Swal.fire({
-      title: "ยืนยันการบันทึก",
-      text: "ต้องการบันทึกเวลาการทำงานนี้ใช่หรือไม่?",
+      title: "Confirm Save",
+      text: "Do you want to save this time log?",
       icon: "question",
       showCancelButton: true,
-      confirmButtonText: "บันทึก",
-      cancelButtonText: "ยกเลิก",
+      confirmButtonText: "Save",
+      cancelButtonText: "Cancel",
     }).then((result) => {
       if (result.isConfirmed) {
-        console.log("Stop confirmed");
         $.ajax({
           url: "../../service/timetracking/stop_timer.php",
           type: "POST",
@@ -305,53 +344,112 @@ $(document).ready(function () {
           },
           dataType: "json",
           success: function (res) {
-            console.log("Stop timer response:", res);
             if (res.status === "success") {
               stopTimer();
               resetForm();
               $("#modalTimer").modal("hide");
               timeLogsTable.ajax.reload();
-              Swal.fire("สำเร็จ", "บันทึกเวลาเรียบร้อย", "success");
-              console.log("Timer stopped successfully");
+              Swal.fire("Success", "Time log saved", "success");
             } else {
-              console.error("Stop timer failed:", res.message);
-              Swal.fire("Error", res.message || "เกิดข้อผิดพลาด", "error");
+              Swal.fire("Error", res.message || "Error occurred", "error");
             }
           },
-          error: function (xhr, status, error) {
-            console.error("Stop timer error:", error);
-            Swal.fire("Error", "ไม่สามารถบันทึกเวลาได้", "error");
+          error: function () {
+            Swal.fire("Error", "Cannot save time log", "error");
           },
         });
       }
     });
   });
 
-  // Reset form when modal closes
-  $("#modalTimer").on("hidden.bs.modal", function () {
-    if (!timerRunning) {
-      resetForm();
+  // Edit button: open Edit Status modal and show real-time duration
+  $("#timeLogsTable").on("click", ".btn-edit", function () {
+    const id = $(this).data("id");
+    const status = $(this).data("status");
+    const note = $(this).data("note");
+    const rowData = timeLogsTable.row($(this).closest('tr')).data();
+
+    $("#editTimelogId").val(id);
+    $("#editStatus").val(status);
+    $("#editNote").val(note);
+
+    function updateEditDuration() {
+      let durationText = "-";
+      if (rowData) {
+        if (rowData.duration && rowData.duration > 0) {
+          durationText = formatDurationFromSeconds(rowData.duration);
+        } else if (rowData.end_time && rowData.start_time) {
+          const start = moment(rowData.start_time);
+          const end = moment(rowData.end_time);
+          durationText = formatDuration(start, end);
+        } else if (rowData.status === "active" && rowData.start_time) {
+          const start = moment(rowData.start_time);
+          const now = moment();
+          durationText = formatDuration(start, now) + " (in progress)";
+        }
+      }
+      $("#editDuration").text(durationText);
     }
+
+    // Start interval if Processing
+    if (rowData.status === "active" && rowData.start_time && !rowData.end_time && (!rowData.duration || rowData.duration == 0)) {
+      updateEditDuration();
+      if (editDurationInterval) clearInterval(editDurationInterval);
+      editDurationInterval = setInterval(updateEditDuration, 1000);
+    } else {
+      updateEditDuration();
+      if (editDurationInterval) clearInterval(editDurationInterval);
+    }
+
+    $("#modalEditStatus").modal("show");
   });
 
-  // Reset form function
+  // clear interval when modal closes
+  $("#modalEditStatus").on("hidden.bs.modal", function () {
+    if (editDurationInterval) clearInterval(editDurationInterval);
+  });
+
+  // Save status change
+  $("#formEditStatus").submit(function (e) {
+    e.preventDefault();
+    const id = $("#editTimelogId").val();
+    const status = $("#editStatus").val();
+    const note = $("#editNote").val();
+    $.ajax({
+      url: "../../service/timetracking/update_status.php",
+      type: "POST",
+      data: { timelog_id: id, status: status, note: note },
+      dataType: "json",
+      success: function (res) {
+        if (res.status === "success") {
+          $("#modalEditStatus").modal("hide");
+          timeLogsTable.ajax.reload();
+          Swal.fire("Success", "Status updated", "success");
+        } else {
+          Swal.fire("Error", res.message, "error");
+        }
+      },
+      error: function () {
+        Swal.fire("Error", "Cannot update status", "error");
+      },
+    });
+  });
+
   function resetForm() {
-    console.log("Resetting form");
     currentTimelogId = null;
     elapsedSeconds = 0;
     stopTimer();
     $("#selectProject").val("").trigger("change");
-    $("#inputDrawing").val("");
+    $("#inputDrawing").val("").removeClass("is-invalid");
     $("#selectActivity").val("design");
     $("#inputNote").val("");
     $("#timerDisplay").text("00:00:00");
     $("#statusBadge")
       .removeClass()
       .addClass("badge badge-secondary")
-      .text("ยังไม่เริ่ม");
+      .text("Not started");
     $("#btnStart").prop("disabled", false);
     $("#btnPause, #btnStop").prop("disabled", true);
     $("#selectProject, #inputDrawing, #selectActivity").prop("disabled", false);
-    console.log("Form reset complete");
   }
 });

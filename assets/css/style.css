@@ -133,3 +133,7 @@ html, body {
   opacity: 1 !important;
 }
 
+.is-invalid { 
+  border-color: #dc3545 !important; 
+}
+

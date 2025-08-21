@@ -79,12 +79,12 @@ function isActive($data)
                         <p>Project Code</p>
                     </a>
                 </li>
-                <li class="nav-item">
+                <!-- <li class="nav-item">
                     <a href="../nghistorys/" class="nav-link <?php echo isActive('nghistorys') ?>">
                         <i class="nav-icon fas fa fa-list-alt"></i>
                         <p>P-Code / T-Code</p>
                     </a>
-                </li>
+                </li> -->
                 <!-- <li class="nav-item">
                     <a href="../orders/" class="nav-link <?php echo isActive('orders') ?>">
                         <i class="nav-icon fas fa-cart-arrow-down"></i>
