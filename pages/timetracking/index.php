@@ -47,6 +47,7 @@ if (!isset($_SESSION['user_id'])) {
                                     <thead>
                                         <tr>
                                             <th>No.</th>
+                                            <th>User Name</th>
                                             <th>Date</th>
                                             <th>Project</th>
                                             <th>Drawing No.</th>

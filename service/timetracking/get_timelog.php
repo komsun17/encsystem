@@ -2,6 +2,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once('../connect.php');
+date_default_timezone_set('Asia/Bangkok');
 
 try {
     if (!isset($_SESSION['user_id'])) {
@@ -19,10 +20,12 @@ try {
             t.note,
             t.status,
             t.drawing_no,
-            t.duration, -- duration in seconds
-            p.name as project_name
+            t.duration,
+            p.name as project_name,
+            u.name as user_name
         FROM time_entries t
         LEFT JOIN projects p ON t.project_id = p.id
+        LEFT JOIN users u ON t.user_id = u.id
         WHERE t.user_id = :user_id
         ORDER BY t.start_time DESC
     ");
@@ -37,7 +40,6 @@ try {
         'data' => $data,
         'status' => 'success'
     ]);
-
 } catch (PDOException $e) {
     error_log("Database Error: " . $e->getMessage());
     http_response_code(500);

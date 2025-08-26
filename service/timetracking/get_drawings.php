@@ -1,6 +1,7 @@
 <?php
 session_start();
 require '../connect.php';
+date_default_timezone_set('Asia/Bangkok');
 
 if (!isset($_GET['project_id'])) {
     http_response_code(400);

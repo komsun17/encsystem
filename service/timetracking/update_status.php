@@ -2,6 +2,7 @@
 session_start();
 header('Content-Type: application/json; charset=utf-8');
 require_once('../connect.php');
+date_default_timezone_set('Asia/Bangkok');
 
 try {
     if (!isset($_SESSION['user_id'])) {
