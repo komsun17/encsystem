@@ -21,6 +21,8 @@ try {
             t.status,
             t.drawing_no,
             t.duration,
+            t.pause_start,
+            t.pause_duration,
             p.name as project_name,
             u.name as user_name
         FROM time_entries t

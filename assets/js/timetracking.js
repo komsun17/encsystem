@@ -87,17 +87,51 @@ $(document).ready(function () {
         data: null,
         title: "Duration",
         render: function (data, type, row) {
+          // Processing (active)
           if (row.status === "active" && row.start_time && !row.end_time) {
-            const start = moment(row.start_time);
-            const now = moment();
-            return formatDuration(start, now);
+            const start = moment.utc(row.start_time);
+            const now = moment.utc();
+            let pauseDuration = row.pause_duration || 0;
+            if (row.pause_start) {
+              pauseDuration += moment
+                .utc()
+                .diff(moment.utc(row.pause_start), "seconds");
+            }
+            const duration = moment.duration(
+              now.diff(start) - pauseDuration * 1000
+            );
+            return (
+              (
+                (duration.hours() ? duration.hours() + "h " : "") +
+                (duration.minutes() ? duration.minutes() + "m " : "") +
+                (duration.seconds() ? duration.seconds() + "s" : "")
+              ).trim() || "0s"
+            );
           }
+          // Paused
+          if (row.status === "paused" && row.start_time && row.pause_start) {
+            const start = moment.utc(row.start_time);
+            const pause = moment.utc(row.pause_start);
+            let pauseDuration = row.pause_duration || 0;
+            // ไม่ต้องบวก pause ล่าสุด เพราะ pause_start คือเวลาหยุดล่าสุด
+            const duration = moment.duration(
+              pause.diff(start) - pauseDuration * 1000
+            );
+            return (
+              (
+                (duration.hours() ? duration.hours() + "h " : "") +
+                (duration.minutes() ? duration.minutes() + "m " : "") +
+                (duration.seconds() ? duration.seconds() + "s" : "")
+              ).trim() || "0s"
+            );
+          }
+          // Finished
           if (row.duration && row.duration > 0) {
             return formatDurationFromSeconds(row.duration);
           }
           if (row.end_time && row.start_time) {
-            const start = moment(row.start_time);
-            const end = moment(row.end_time);
+            const start = moment.utc(row.start_time);
+            const end = moment.utc(row.end_time);
             return formatDuration(start, end);
           }
           return "-";
@@ -152,19 +186,27 @@ $(document).ready(function () {
   function startDurationUpdater() {
     if (durationInterval) clearInterval(durationInterval);
     durationInterval = setInterval(function () {
-      timeLogsTable.rows().every(function (rowIdx, tableLoop, rowLoop) {
+      timeLogsTable.rows().every(function (rowIdx) {
         const row = this.data();
-        // Only update if status is active and no end_time/duration
-        if (
-          row.status === "active" &&
-          row.start_time &&
-          !row.end_time &&
-          (!row.duration || row.duration == 0)
-        ) {
-          const start = moment(row.start_time);
-          const now = moment();
-          const durationText = formatDuration(start, now);
-          $(timeLogsTable.cell(rowIdx, 5).node()).html(durationText);
+        if (row.status === "active" && row.start_time && !row.end_time) {
+          const start = moment.utc(row.start_time);
+          const now = moment.utc();
+          let pauseDuration = row.pause_duration || 0;
+          if (row.pause_start) {
+            pauseDuration += moment
+              .utc()
+              .diff(moment.utc(row.pause_start), "seconds");
+          }
+          const duration = moment.duration(
+            now.diff(start) - pauseDuration * 1000
+          );
+          const durationText =
+            (duration.hours() ? duration.hours() + "h " : "") +
+            (duration.minutes() ? duration.minutes() + "m " : "") +
+            (duration.seconds() ? duration.seconds() + "s" : "");
+          $(timeLogsTable.cell(rowIdx, 6).node()).html(
+            durationText.trim() || "0s"
+          );
         }
       });
     }, 1000);
@@ -175,7 +217,7 @@ $(document).ready(function () {
   startDurationUpdater();
 
   // Responsive fix after modal close
-  $("#modalTimer").on("hidden.bs.modal", function () {  
+  $("#modalTimer").on("hidden.bs.modal", function () {
     setTimeout(function () {
       timeLogsTable.columns.adjust().responsive.recalc();
     }, 200);
@@ -315,9 +357,9 @@ $(document).ready(function () {
   $("#btnPause").click(function () {
     if (!currentTimelogId) return;
     $.ajax({
-      url: "../../service/timetracking/pause_timer.php",
+      url: "../../service/timetracking/update_status.php",
       type: "POST",
-      data: { timelog_id: currentTimelogId },
+      data: { timelog_id: currentTimelogId, status: "paused" },
       dataType: "json",
       success: function (res) {
         if (res.status === "success") {
@@ -346,10 +388,11 @@ $(document).ready(function () {
     }).then((result) => {
       if (result.isConfirmed) {
         $.ajax({
-          url: "../../service/timetracking/stop_timer.php",
+          url: "../../service/timetracking/update_status.php",
           type: "POST",
           data: {
             timelog_id: currentTimelogId,
+            status: "completed",
             note: $("#inputNote").val().trim(),
           },
           dataType: "json",
@@ -390,17 +433,29 @@ $(document).ready(function () {
         rowData.start_time &&
         !rowData.end_time
       ) {
-        const start = moment(rowData.start_time);
-        const now = moment();
-        durationText = formatDuration(start, now);
+        const start = moment.utc(rowData.start_time);
+        const now = moment.utc();
+        let pauseDuration = rowData.pause_duration || 0;
+        if (rowData.pause_start) {
+          pauseDuration += moment
+            .utc()
+            .diff(moment.utc(rowData.pause_start), "seconds");
+        }
+        const duration = moment.duration(
+          now.diff(start) - pauseDuration * 1000
+        );
+        durationText =
+          (duration.hours() ? duration.hours() + "h " : "") +
+          (duration.minutes() ? duration.minutes() + "m " : "") +
+          (duration.seconds() ? duration.seconds() + "s" : "");
       } else if (rowData.duration && rowData.duration > 0) {
         durationText = formatDurationFromSeconds(rowData.duration);
       } else if (rowData.end_time && rowData.start_time) {
-        const start = moment(rowData.start_time);
-        const end = moment(rowData.end_time);
+        const start = moment.utc(rowData.start_time);
+        const end = moment.utc(rowData.end_time);
         durationText = formatDuration(start, end);
       }
-      $("#editDuration").text(durationText);
+      $("#editDuration").text(durationText.trim() || "0s");
     }
     if (
       rowData.status === "active" &&
@@ -426,6 +481,26 @@ $(document).ready(function () {
     const id = $("#editTimelogId").val();
     const status = $("#editStatus").val();
     const note = $("#editNote").val();
+
+    if (status === "completed") {
+      Swal.fire({
+        title: "Are you sure?",
+        text: "After finishing, you cannot change the status again.",
+        icon: "warning",
+        showCancelButton: true,
+        confirmButtonText: "Finish",
+        cancelButtonText: "Cancel",
+      }).then((result) => {
+        if (result.isConfirmed) {
+          updateStatusAjax(id, status, note);
+        }
+      });
+    } else {
+      updateStatusAjax(id, status, note);
+    }
+  });
+
+  function updateStatusAjax(id, status, note) {
     $.ajax({
       url: "../../service/timetracking/update_status.php",
       type: "POST",
@@ -444,26 +519,7 @@ $(document).ready(function () {
         Swal.fire("Error", "Cannot update status", "error");
       },
     });
-  });
-
-  function startDurationUpdater() {
-    if (durationInterval) clearInterval(durationInterval);
-    durationInterval = setInterval(function () {
-      timeLogsTable.rows().every(function (rowIdx) {
-        const row = this.data();
-        if (row.status === "active" && row.start_time && !row.end_time) {
-          const start = moment(row.start_time);
-          const now = moment();
-          const durationText = formatDuration(start, now);
-          $(timeLogsTable.cell(rowIdx, 6).node()).html(durationText); // 6 คือ index ของ Duration
-        }
-      });
-    }, 1000);
   }
-  timeLogsTable.on("draw", function () {
-    startDurationUpdater();
-  });
-  startDurationUpdater();
 
   function resetForm() {
     currentTimelogId = null;
@@ -482,4 +538,29 @@ $(document).ready(function () {
     $("#btnPause, #btnStop").prop("disabled", true);
     $("#selectProject, #inputDrawing, #selectActivity").prop("disabled", false);
   }
+
+  $("#btnNewTimer").on("click", function () {
+    let hasProcessing = false;
+    timeLogsTable.rows().every(function () {
+      const row = this.data();
+      if (row.status === "active") {
+        hasProcessing = true;
+      }
+    });
+
+    if (hasProcessing) {
+      Swal.fire({
+        icon: "warning",
+        title: "Cannot add new job",
+        text: "Please finish or pause the current Processing job before starting a new one.",
+        confirmButtonText: "OK",
+      });
+      // *** ไม่ต้องเปิด modalTimer ***
+      return;
+    }
+
+    // ไม่มีงาน Processing ค่อยเปิด modal
+    resetForm();
+    $("#modalTimer").modal("show");
+  });
 });

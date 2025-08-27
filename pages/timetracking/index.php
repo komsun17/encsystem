@@ -37,7 +37,7 @@ if (!isset($_SESSION['user_id'])) {
                     <div class="card">
                         <div class="card-header">
                             <h3 class="card-title">Time Logs</h3>
-                            <button class="btn btn-primary float-right" data-toggle="modal" data-target="#modalTimer">
+                            <button id="btnNewTimer" class="btn btn-primary float-right">
                                 <i class="fas fa-plus"></i> New Timer
                             </button>
                         </div>
