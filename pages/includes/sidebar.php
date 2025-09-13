@@ -74,23 +74,18 @@ function isActive($data)
                     </a>
                 </li>
                 <li class="nav-item">
-                    <a href="../prodorderlines/" class="nav-link <?php echo isActive('members') ?>">
+                    <a href="../projects/" class="nav-link <?php echo isActive('members') ?>">
                         <i class="nav-icon fas fa fa-search"></i>
                         <p>Project Code</p>
                     </a>
                 </li>
-                <!-- <li class="nav-item">
-                    <a href="../nghistorys/" class="nav-link <?php echo isActive('nghistorys') ?>">
+                <li class="nav-item">
+                    <a href="../report/" class="nav-link <?php echo isActive('report') ?>">
                         <i class="nav-icon fas fa fa-list-alt"></i>
-                        <p>P-Code / T-Code</p>
+                        <p>Report</p>
                     </a>
-                </li> -->
-                <!-- <li class="nav-item">
-                    <a href="../orders/" class="nav-link <?php echo isActive('orders') ?>">
-                        <i class="nav-icon fas fa-cart-arrow-down"></i>
-                        <p>รายการสั่งซื้อ</p>
-                    </a>
-                </li> -->
+                </li>
+                
                 <li class="nav-header">My account</li>
                 <li class="nav-item">
                     <a href="../logout.php" id="logout" class="nav-link">

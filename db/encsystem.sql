@@ -3,7 +3,7 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql
--- Generation Time: Aug 18, 2025 at 02:09 PM
+-- Generation Time: Sep 13, 2025 at 02:32 AM
 -- Server version: 5.7.44
 -- PHP Version: 8.2.27
 
@@ -39,13 +39,6 @@ CREATE TABLE `drawings` (
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
---
--- Dumping data for table `drawings`
---
-
-INSERT INTO `drawings` (`id`, `project_id`, `drawing_no`, `revision`, `description`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 1, 'DWG-001-REV', 'B', 'Updated Drawing', 'deleted', 1, '2025-08-18 13:48:34', '2025-08-18 13:52:37');
-
 -- --------------------------------------------------------
 
 --
@@ -54,6 +47,7 @@ INSERT INTO `drawings` (`id`, `project_id`, `drawing_no`, `revision`, `descripti
 
 CREATE TABLE `projects` (
   `id` int(11) NOT NULL,
+  `code` varchar(50) DEFAULT NULL,
   `name` varchar(100) NOT NULL,
   `client_name` varchar(100) DEFAULT NULL,
   `start_date` date NOT NULL,
@@ -63,13 +57,6 @@ CREATE TABLE `projects` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `projects`
---
-
-INSERT INTO `projects` (`id`, `name`, `client_name`, `start_date`, `end_date`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'Updated Project', 'Updated Client', '2023-08-18', '2023-12-03', 'deleted', 1, '2025-08-18 13:37:39', '2025-08-18 13:42:54');
 
 -- --------------------------------------------------------
 
@@ -81,23 +68,20 @@ CREATE TABLE `time_entries` (
   `id` int(11) NOT NULL,
   `user_id` int(11) NOT NULL,
   `project_id` int(11) NOT NULL,
-  `drawing_id` int(11) NOT NULL,
+  `drawing_no` varchar(100) DEFAULT NULL,
+  `drawing_id` int(11) DEFAULT NULL,
   `activity_type` enum('design','review','modify','meeting','other') NOT NULL,
   `start_time` datetime NOT NULL,
   `end_time` datetime DEFAULT NULL,
-  `duration` int(11) DEFAULT NULL,
-  `notes` text,
-  `status` enum('active','paused','completed','cancelled') DEFAULT 'active',
+  `duration_minutes` int(11) DEFAULT NULL,
+  `note` text,
+  `status` enum('active','paused','completed') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
-  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `time_entries`
---
-
-INSERT INTO `time_entries` (`id`, `user_id`, `project_id`, `drawing_id`, `activity_type`, `start_time`, `end_time`, `duration`, `notes`, `status`, `created_at`, `updated_at`) VALUES
-(1, 1, 1, 1, 'design', '2025-08-18 13:55:23', '2025-08-18 13:58:43', 423, 'งานเสร็จเรียบร้อย', 'completed', '2025-08-18 13:55:23', '2025-08-18 13:58:43');
+  `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `duration` int(11) DEFAULT NULL,
+  `pause_duration` int(11) DEFAULT '0',
+  `pause_start` datetime DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
 
 -- --------------------------------------------------------
 
@@ -117,14 +101,6 @@ CREATE TABLE `users` (
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-
---
--- Dumping data for table `users`
---
-
-INSERT INTO `users` (`id`, `username`, `password`, `name`, `email`, `role`, `status`, `created_by`, `created_at`, `updated_at`) VALUES
-(1, 'admin', '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'System Admin', 'admin@example.com', 'admin', 'active', 1, '2025-08-18 13:01:16', '2025-08-18 13:28:50'),
-(2, 'testuser', '$2y$10$8KYXbTIbmb72obR/QvIk7er.ilJdyfQlOcNjEhqISz9O.aFkC5/D.', 'Test User', 'est@example.com', 'user', 'deleted', 1, '2025-08-18 13:24:19', '2025-08-18 13:28:26');
 
 --
 -- Indexes for dumped tables
@@ -170,25 +146,25 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `drawings`
 --
 ALTER TABLE `drawings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `time_entries`
 --
 ALTER TABLE `time_entries`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables
