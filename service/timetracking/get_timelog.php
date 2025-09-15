@@ -23,7 +23,7 @@ try {
             t.duration,
             t.pause_start,
             t.pause_duration,
-            p.name as project_name,
+            p.code as project_name,
             u.name as user_name
         FROM time_entries t
         LEFT JOIN projects p ON t.project_id = p.id

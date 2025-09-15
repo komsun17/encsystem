@@ -10,10 +10,10 @@ try {
     }
 
     $stmt = $conn->prepare("
-        SELECT id, name 
-        FROM projects 
-        WHERE status = 'active' 
-        ORDER BY name ASC
+        SELECT id, code, client_name
+        FROM projects
+        WHERE code IS NOT NULL AND code != ''
+        ORDER BY code ASC
     ");
     $stmt->execute();
     $projects = $stmt->fetchAll(PDO::FETCH_ASSOC);

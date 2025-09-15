@@ -238,7 +238,8 @@ $(document).ready(function () {
         if (res.status === "success") {
           let options = '<option value="">-- Select Project --</option>';
           res.data.forEach(function (project) {
-            options += `<option value="${project.id}">${project.name}</option>`;
+            // ตรวจสอบว่ามี project.code จริงหรือไม่
+            options += `<option value="${project.id}">${project.code ? project.code : '(No Code)'}</option>`;
           });
           $("#selectProject").html(options);
         } else {
@@ -425,6 +426,29 @@ $(document).ready(function () {
     $("#editTimelogId").val(id);
     $("#editStatus").val(status);
     $("#editNote").val(note);
+
+    // โหลด Project Code ใน modalEditStatus (ถ้ามี combobox project ใน modal นี้)
+    if ($("#editProject").length) {
+      // สมมติว่ามี select#editProject ใน modalEditStatus
+      $.ajax({
+        url: "../../service/timetracking/get_projects.php",
+        type: "GET",
+        dataType: "json",
+        success: function (res) {
+          if (res.status === "success") {
+            let options = '<option value="">-- Select Project --</option>';
+            res.data.forEach(function (project) {
+              options += `<option value="${project.id}">${project.code}</option>`;
+            });
+            $("#editProject").html(options);
+            // set ค่า project ที่เลือกไว้
+            if (rowData.project_id) {
+              $("#editProject").val(rowData.project_id);
+            }
+          }
+        }
+      });
+    }
 
     function updateEditDuration() {
       let durationText = "-";

@@ -100,7 +100,7 @@ if (!isset($_SESSION['user_id'])) {
                 cancelButtonText: 'Cancel'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    $.post('../../service/report/sync_project_code.php', function(res) {
+                    $.post('../../service/projects/sync_project_code.php', function(res) {
                         if(res.status === 'success') {
                             Swal.fire('Success', res.message, 'success');
                             loadProjects();

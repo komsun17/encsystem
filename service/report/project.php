@@ -40,7 +40,7 @@ try {
             t.note,
             u.name as user_name,
             p.code as project_code,
-            p.name as project_name
+            p.client_name as project_name
         FROM time_entries t
         LEFT JOIN users u ON t.user_id = u.id
         LEFT JOIN projects p ON t.project_id = p.id

@@ -23,15 +23,19 @@ $isAdmin = ($role === 'admin');
         .is-invalid {
             border-color: #dc3545 !important;
         }
+
         .report-card-btn {
             cursor: pointer;
             transition: box-shadow .2s, border .2s;
             border: 2px solid transparent;
         }
-        .report-card-btn.active, .report-card-btn:hover {
+
+        .report-card-btn.active,
+        .report-card-btn:hover {
             box-shadow: 0 0 0 2px #007bff;
             border-color: #007bff !important;
         }
+
         .small-box {
             border-radius: 0.5rem;
             min-height: 120px;
@@ -39,9 +43,11 @@ $isAdmin = ($role === 'admin');
             align-items: center;
             justify-content: center;
         }
+
         .small-box .inner {
             width: 100%;
         }
+
         .small-box h4 {
             font-size: 1.2rem;
             margin-top: 0.5rem;
@@ -62,7 +68,7 @@ $isAdmin = ($role === 'admin');
                 <div class="container-fluid">
                     <div class="row mb-3">
                         <div class="col-12 text-right">
-                            <button id="btnSyncProjectCode" class="btn btn-warning"><i class="fas fa-sync-alt"></i> Sync Project Code</button>
+                            <!-- <button id="btnSyncProjectCode" class="btn btn-warning"><i class="fas fa-sync-alt"></i> Sync Project Code</button> -->
                         </div>
                     </div>
                     <!-- Card Buttons -->
@@ -182,7 +188,7 @@ $isAdmin = ($role === 'admin');
         <script src="../../plugins/sweetalert2/sweetalert2.min.js"></script>
         <script src="../../assets/js/adminlte.min.js"></script>
         <!-- เพิ่ม Script สำหรับ SheetJS และ jsPDF -->
-        <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+        <script src="../../assets/js/xlsx.full.min.js"></script>
         <script src="../../assets/js/jspdf.umd.min.js"></script>
         <script src="../../assets/js/jspdf.plugin.autotable.min.js"></script>
         <script>
@@ -225,10 +231,10 @@ $isAdmin = ($role === 'admin');
                 }
 
                 function loadProjects() {
-                    $.getJSON("../../service/report/project_list.php", function(res) {
+                    $.getJSON("../../service/report/project_code_from_time_entries.php", function(res) {
                         if (res.status === "success") {
                             let opts = `<option value="">-- All Projects --</option>`;
-                            res.data.forEach(p => opts += `<option value="${p.code}">${p.code} - ${p.name}</option>`);
+                            res.data.forEach(p => opts += `<option value="${p.code}">${p.code}</option>`);
                             $("#filterProject").html(opts);
                         }
                     });
@@ -333,7 +339,9 @@ $isAdmin = ($role === 'admin');
                     if (typeof window.XLSX === "undefined") {
                         const script = document.querySelector('script[src*="xlsx.full.min.js"]');
                         if (script) {
-                            script.addEventListener('load', doExport, { once: true });
+                            script.addEventListener('load', doExport, {
+                                once: true
+                            });
                         } else {
                             alert('ไม่พบไฟล์ xlsx.full.min.js');
                         }
@@ -370,7 +378,9 @@ $isAdmin = ($role === 'admin');
                     if (typeof window.XLSX === "undefined") {
                         const script = document.querySelector('script[src*="xlsx.full.min.js"]');
                         if (script) {
-                            script.addEventListener('load', doExport, { once: true });
+                            script.addEventListener('load', doExport, {
+                                once: true
+                            });
                         } else {
                             alert('ไม่พบไฟล์ xlsx.full.min.js');
                         }
@@ -392,34 +402,11 @@ $isAdmin = ($role === 'admin');
                     });
                     doc.save(`report_monthly_${moment().format('YYYYMMDD_HHmm')}.pdf`);
                 });
-                // Sync Project Code
-                $('#btnSyncProjectCode').on('click', function() {
-                    Swal.fire({
-                        title: 'Sync Project Code?',
-                        text: 'This will import/update project code from NAV. Continue?',
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Yes, Sync',
-                        cancelButtonText: 'Cancel'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.post('../../service/report/sync_project_code.php', function(res) {
-                                if(res.status === 'success') {
-                                    Swal.fire('Success', res.message, 'success');
-                                    loadProjects(); // reload project list
-                                } else {
-                                    Swal.fire('Error', res.message || 'Sync failed', 'error');
-                                }
-                            },'json').fail(function(){
-                                Swal.fire('Error', 'Sync failed', 'error');
-                            });
-                        }
-                    });
-                });
                 // Default: show project report
                 $("#projectReportForm").trigger('submit');
             });
         </script>
     </div>
 </body>
+
 </html>
