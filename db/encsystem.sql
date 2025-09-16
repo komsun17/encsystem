@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: mysql
--- Generation Time: Sep 13, 2025 at 02:32 AM
--- Server version: 5.7.44
+-- Generation Time: Sep 16, 2025 at 09:28 AM
+-- Server version: 8.0.43
 -- PHP Version: 8.2.27
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -28,16 +28,16 @@ SET time_zone = "+00:00";
 --
 
 CREATE TABLE `drawings` (
-  `id` int(11) NOT NULL,
-  `project_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `project_id` int NOT NULL,
   `drawing_no` varchar(100) NOT NULL,
   `revision` varchar(10) DEFAULT NULL,
   `description` text,
   `status` enum('active','archived','deleted') DEFAULT 'active',
-  `created_by` int(11) DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -46,17 +46,13 @@ CREATE TABLE `drawings` (
 --
 
 CREATE TABLE `projects` (
-  `id` int(11) NOT NULL,
-  `code` varchar(50) DEFAULT NULL,
-  `name` varchar(100) NOT NULL,
+  `id` int NOT NULL,
+  `code` varchar(100) CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci NOT NULL,
   `client_name` varchar(100) DEFAULT NULL,
-  `start_date` date NOT NULL,
-  `end_date` date DEFAULT NULL,
-  `status` enum('active','completed','deleted') DEFAULT 'active',
-  `created_by` int(11) DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 -- --------------------------------------------------------
 
@@ -65,23 +61,23 @@ CREATE TABLE `projects` (
 --
 
 CREATE TABLE `time_entries` (
-  `id` int(11) NOT NULL,
-  `user_id` int(11) NOT NULL,
-  `project_id` int(11) NOT NULL,
+  `id` int NOT NULL,
+  `user_id` int NOT NULL,
+  `project_id` int NOT NULL,
   `drawing_no` varchar(100) DEFAULT NULL,
-  `drawing_id` int(11) DEFAULT NULL,
+  `drawing_id` int DEFAULT NULL,
   `activity_type` enum('design','review','modify','meeting','other') NOT NULL,
   `start_time` datetime NOT NULL,
   `end_time` datetime DEFAULT NULL,
-  `duration_minutes` int(11) DEFAULT NULL,
+  `duration_minutes` int DEFAULT NULL,
   `note` text,
   `status` enum('active','paused','completed') DEFAULT 'active',
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-  `duration` int(11) DEFAULT NULL,
-  `pause_duration` int(11) DEFAULT '0',
+  `duration` int DEFAULT NULL,
+  `pause_duration` int DEFAULT '0',
   `pause_start` datetime DEFAULT NULL
-) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb3;
 
 -- --------------------------------------------------------
 
@@ -90,17 +86,17 @@ CREATE TABLE `time_entries` (
 --
 
 CREATE TABLE `users` (
-  `id` int(11) NOT NULL,
+  `id` int NOT NULL,
   `username` varchar(50) NOT NULL,
   `password` varchar(255) NOT NULL,
   `name` varchar(100) NOT NULL,
   `email` varchar(100) DEFAULT NULL,
   `role` enum('admin','user') DEFAULT 'user',
   `status` enum('active','inactive','deleted') DEFAULT 'active',
-  `created_by` int(11) DEFAULT NULL,
+  `created_by` int DEFAULT NULL,
   `created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,
   `updated_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_0900_ai_ci;
 
 --
 -- Indexes for dumped tables
@@ -146,25 +142,25 @@ ALTER TABLE `users`
 -- AUTO_INCREMENT for table `drawings`
 --
 ALTER TABLE `drawings`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `projects`
 --
 ALTER TABLE `projects`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `time_entries`
 --
 ALTER TABLE `time_entries`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `users`
 --
 ALTER TABLE `users`
-  MODIFY `id` int(11) NOT NULL AUTO_INCREMENT;
+  MODIFY `id` int NOT NULL AUTO_INCREMENT;
 
 --
 -- Constraints for dumped tables

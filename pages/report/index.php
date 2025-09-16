@@ -275,6 +275,7 @@ $isAdmin = ($role === 'admin');
                     };
                     $.getJSON("../../service/report/monthly.php", params, function(res) {
                         if (res.status === "success") {
+                            // เปลี่ยนจาก project_stats เป็น entries
                             renderReportTable(reportTableMonthly, res.data.entries);
                             renderSummary("#reportSummaryMonthly", res.data.summary);
                         } else {
@@ -286,6 +287,11 @@ $isAdmin = ($role === 'admin');
                 function renderReportTable(table, entries) {
                     table.clear();
                     entries.forEach((r, i) => {
+                        // duration เป็นวินาที ให้แปลงเป็นชั่วโมง (ทศนิยม 2 ตำแหน่ง)
+                        let durationHour = "-";
+                        if (r.duration && !isNaN(r.duration)) {
+                            durationHour = (r.duration / 3600).toFixed(2) + " h";
+                        }
                         table.row.add([
                             i + 1,
                             r.start_time ? moment.utc(r.start_time).local().format('YYYY-MM-DD HH:mm') : '-',
@@ -293,9 +299,37 @@ $isAdmin = ($role === 'admin');
                             r.project_code || r.project_name || '-',
                             r.drawing_no || '-',
                             r.activity_type || '-',
-                            r.duration || '-',
+                            durationHour,
                             r.note || '-',
                             r.user_name || '-'
+                        ]);
+                    });
+                    table.draw();
+                }
+
+                function renderMonthlyTable(table, stats) {
+                    table.clear();
+                    // ป้องกัน error ถ้า stats เป็น undefined หรือไม่ใช่ array
+                    if (!Array.isArray(stats) || stats.length === 0) {
+                        table.draw();
+                        return;
+                    }
+                    stats.forEach((r, i) => {
+                        // total_minutes เป็นนาที ให้แปลงเป็นชั่วโมง (ทศนิยม 2 ตำแหน่ง)
+                        let durationHour = "-";
+                        if (r.total_minutes && !isNaN(r.total_minutes)) {
+                            durationHour = (r.total_minutes / 60).toFixed(2) + " h";
+                        }
+                        table.row.add([
+                            i + 1,
+                            "-", // Start Time (ไม่มีใน project_stats)
+                            "-", // End Time (ไม่มีใน project_stats)
+                            r.project_name || r.project_code || r.code || "-", // Project
+                            "-", // Drawing No. (ไม่มีใน project_stats)
+                            "-", // Activity (ไม่มีใน project_stats)
+                            durationHour,
+                            "-", // Note (ไม่มีใน project_stats)
+                            "-" // User (ไม่มีใน project_stats)
                         ]);
                     });
                     table.draw();

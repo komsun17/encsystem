@@ -1,11 +1,30 @@
 <?php
+// Secure session cookie settings
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path' => '/',
+    'domain' => '',
+    'secure' => isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on',
+    'httponly' => true,
+    'samesite' => 'Strict',
+]);
 session_start();
 header('Content-Type: application/json');
 
 require_once('../connect.php');
 
-$username = $_POST['username'] ?? '';
-$password = $_POST['password'] ?? '';
+
+// Input validation (basic)
+$username = isset($_POST['username']) ? trim($_POST['username']) : '';
+$password = isset($_POST['password']) ? $_POST['password'] : '';
+
+if (!preg_match('/^[A-Za-z0-9_@.\-]{3,50}$/', $username)) {
+    echo json_encode([
+        'status' => 'error',
+        'message' => 'ชื่อผู้ใช้ไม่ถูกต้อง'
+    ]);
+    exit;
+}
 
 if (!$username || !$password) {
     echo json_encode([
@@ -38,9 +57,12 @@ try {
         exit;
     }
 
+
+    // Regenerate session id after successful login
+    session_regenerate_id(true);
     $_SESSION['user_id'] = $user['id'];
     $_SESSION['username'] = $user['username'];
-    $_SESSION['name'] = $user['name'];
+    $_SESSION['name'] = htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8');
     $_SESSION['role'] = $user['role'];
     $_SESSION['AD_LOGIN'] = $user['updated_at'];
 
@@ -49,8 +71,9 @@ try {
         'message' => 'เข้าสู่ระบบเรียบร้อย',
         'user' => [
             'id' => $user['id'],
-            'name' => $user['name'],
-            'username' => $user['username'],
+            // Output escaping for name and username
+            'name' => htmlspecialchars($user['name'], ENT_QUOTES, 'UTF-8'),
+            'username' => htmlspecialchars($user['username'], ENT_QUOTES, 'UTF-8'),
             'role' => $user['role']
         ]
     ]);
